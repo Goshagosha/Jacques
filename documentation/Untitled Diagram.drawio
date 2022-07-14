@@ -1,6 +1,6 @@
-<mxfile host="app.diagrams.net" modified="2022-07-14T16:52:27.779Z" agent="5.0 (Windows)" etag="uhZotdxCOcFSlZDoFji1" version="20.1.1" type="github">
+<mxfile host="app.diagrams.net" modified="2022-07-14T16:53:21.887Z" agent="5.0 (Windows)" etag="42EepwXHkiA2WALGwdz0" version="20.1.1" type="github">
   <diagram id="MzWI8Xbqk4ogClHRenAQ" name="Page-1">
-    <mxGraphModel dx="1422" dy="724" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="273" dy="139" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -157,6 +157,9 @@
         </mxCell>
         <mxCell id="j6rCjOf4KR4LdH4R0Cua-62" value="&lt;b style=&quot;font-size: 12px;&quot;&gt;&lt;font style=&quot;font-size: 12px;&quot; face=&quot;Courier New&quot;&gt;&amp;lt;AST of ...&amp;gt;&lt;/font&gt;&lt;/b&gt; both inherit from custom baseclass &lt;b style=&quot;font-size: 12px;&quot;&gt;&lt;font style=&quot;font-size: 12px;&quot; face=&quot;Courier New&quot;&gt;&amp;lt;AST&amp;gt;&lt;/font&gt;&lt;/b&gt;, the symmetric and interfaces will ease tree matching, and make JACQUES easily implementable with other DSLs/Libraries etc." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;shadow=0;labelBackgroundColor=default;fontFamily=Helvetica;fontSize=12;fontColor=#000000;" vertex="1" parent="1">
           <mxGeometry x="40" y="20" width="290" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="j6rCjOf4KR4LdH4R0Cua-63" value="" style="shape=image;html=1;verticalAlign=top;verticalLabelPosition=bottom;labelBackgroundColor=#ffffff;imageAspect=0;aspect=fixed;image=https://cdn4.iconfinder.com/data/icons/ionicons/512/icon-ios7-glasses-outline-128.png;rounded=0;shadow=0;fontFamily=Helvetica;fontSize=12;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="358" y="680" width="13" height="13" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
