@@ -1,3 +1,7 @@
 covid_19_data.csv
-input.py
+input_code.py
+input_dsl.py
 test.py
+*.gv
+*.gv.png
+__pycache__
