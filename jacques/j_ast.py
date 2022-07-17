@@ -1,7 +1,6 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from enum import Enum
-from turtle import shape
 from typing import List
 import graphviz
 
@@ -11,15 +10,6 @@ from jacques.utils import id_generator
 class AstType(Enum):
     CODE = 1
     DSL = 2
-
-
-class ArgumentType(Enum):
-    NUMBER = 1
-    STRING = 2
-    KEYWORD = 3
-    LIST = 4
-    OPERATION = 5
-
 
 class Argument(ABC):
     @abstractmethod
@@ -31,18 +21,18 @@ class Argument(ABC):
 
 
 class NumberArgument(Argument):
-    def __init__(self, value: str) -> None:
-        self.value = value
+    def __init__(self, value) -> None:
+        self.value = str(value)
 
 
 class StringArgument(Argument):
-    def __init__(self, value: str) -> None:
-        self.value = value
+    def __init__(self, value) -> None:
+        self.value = str(value)
 
 
 class KeywordArgument(Argument):
-    def __init__(self, value: str) -> None:
-        self.value = value
+    def __init__(self, value) -> None:
+        self.value = str(value)
 
 
 class ListArgument(Argument):
@@ -63,6 +53,9 @@ class ListArgument(Argument):
 class OperationArgument(Argument):
     def __init__(self, left: Argument, operator: str, right: Argument) -> None:
         self.value = (left, operator, right)
+
+    def __repr__(self):
+        return str(list(self.value))
 
     def _plot_to_graph(self, graph, id_generator) -> str:
         id = next(id_generator)

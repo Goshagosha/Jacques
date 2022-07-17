@@ -62,7 +62,7 @@ class DslParser(Parser):
                 result.append(self._resolve_non_list_type(each))
         return result
 
-    def _resolve_non_list_type(self, string: str):
+    def _resolve_non_list_type(self, string: str) -> Argument:
         if string.startswith("'") or string.startswith('"'):
             return StringArgument(string)
         if is_float(string):
