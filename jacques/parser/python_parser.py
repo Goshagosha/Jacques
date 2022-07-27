@@ -1,6 +1,6 @@
+import ast, copy
 from jacques.j_ast import *
 from jacques.parser.parser import Parser
-import ast
 from jacques.problem_knowledge import ProblemKnowledge
 
 from jacques.utils import is_float
@@ -17,8 +17,8 @@ class PythonParser(Parser):
             raise Exception("Found call node twice - this is not a linear program!")
         self.next_call_node = node
 
-    def parse(self, source_string: str) -> JAST:
-        jast = JAST(AstType.CODE)
+    def parse(self, source_string: str) -> CodeJAST:
+        jast = CodeJAST()
         self.jast_in_focus = jast
         tree = ast.parse(source_string)
 
@@ -26,6 +26,7 @@ class PythonParser(Parser):
         call_node = tree.body[0].value
 
         while call_node != None:
+            self.jast_in_focus.code_ast = copy.deepcopy(call_node)
             self._infer_command_name(call_node)
             if isinstance(call_node, ast.Call):
                 for arg in call_node.args:
@@ -43,7 +44,7 @@ class PythonParser(Parser):
             call_node = self.next_call_node
             self.next_call_node = None
             if call_node:
-                self.jast_in_focus.child = JAST(AstType.CODE)
+                self.jast_in_focus.child = CodeJAST()
                 self.jast_in_focus = self.jast_in_focus.child
 
         return jast

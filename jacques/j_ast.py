@@ -7,10 +7,6 @@ import graphviz
 from jacques.utils import id_generator
 
 
-class AstType(Enum):
-    CODE = 1
-    DSL = 2
-
 class Argument(ABC):
     @abstractmethod
     def __init__(self, value) -> None:
@@ -22,17 +18,17 @@ class Argument(ABC):
 
 class NumberArgument(Argument):
     def __init__(self, value) -> None:
-        self.value = str(value)
+        self.value = value
 
 
 class StringArgument(Argument):
     def __init__(self, value) -> None:
-        self.value = str(value)
+        self.value = value
 
 
 class KeywordArgument(Argument):
     def __init__(self, value) -> None:
-        self.value = str(value)
+        self.value = value
 
 
 class ListArgument(Argument):
@@ -48,6 +44,26 @@ class ListArgument(Argument):
             graph.node(each_id, str(each))
             graph.edge(id, each_id)
         return id
+
+    def __iter__(self):
+        return ListArgumentIterator(self)
+
+
+class ListArgumentIterator:
+    def __init__(self, list_argument: ListArgument) -> None:
+        self.idx = 0
+        self.list = list_argument.value
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        self.idx += 1
+        try:
+            return self.list[self.idx - 1]
+        except IndexError:
+            self.idx = 0
+            raise StopIteration
 
 
 class OperationArgument(Argument):
@@ -68,16 +84,36 @@ class OperationArgument(Argument):
         return id
 
 
+def flatten_argument_set(_list: List[Argument]):
+    result = []
+    for arg in _list:
+        if isinstance(arg, ListArgument):
+            result += flatten_argument_set(arg)
+        elif isinstance(arg, OperationArgument):
+            result += ["operation_argument"]
+        else:
+            result += [arg]
+    return result
+
+
 class JAST:
-    def __init__(self, ast_type: AstType) -> None:
-        self.type = ast_type
+    def __init__(self) -> None:
         self.command = None
         self.child = None
         self.arguments: List[Argument] = []
 
     def compare(self, another_ast: JAST) -> int:
-        # produce similarity score
-        raise NotImplementedError
+        score = 0
+        # hacky solution
+        this_buffer_of_args = flatten_argument_set(self.arguments.copy())
+        other_buffer_of_args = flatten_argument_set(another_ast.arguments.copy())
+        if len(this_buffer_of_args) == 0 and len(other_buffer_of_args) == 0:
+            score += 1
+        for each in this_buffer_of_args:
+            for every in other_buffer_of_args:
+                score += int(each == every)
+
+        return score
 
     def visualize(self, export_name) -> None:
         graph = graphviz.Graph(name=export_name, format="png")
@@ -92,7 +128,6 @@ class JAST:
             child_id = self.child._visualize_recursive(graph, id_generator)
             graph.edge(id, child_id)
         for arg in self.arguments:
-            name = None
             if isinstance(arg, (ListArgument, OperationArgument)):
                 arg_id = arg._plot_to_graph(graph, id_generator)
             else:
@@ -100,3 +135,28 @@ class JAST:
                 graph.node(arg_id, label=str(arg))
             graph.edge(id, arg_id)
         return id
+
+
+class CodeJAST(JAST):
+    def __init__(self):
+        self.code_ast = None
+        super().__init__()
+
+
+class DslJAST(JAST):
+    def __init__(self):
+        self.dsl_string = None
+        super().__init__()
+
+
+class JastFamily:
+    def __init__(self, from_jast: JAST):
+        self.command = from_jast.command
+        self.samples = [from_jast]
+
+    def append_sample(self, sample: JAST):
+        if sample.command != self.command:
+            raise Exception(
+                "JAST sample you are trying to add to a family starts with a different command"
+            )
+        self.samples.append(sample)

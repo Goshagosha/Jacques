@@ -28,3 +28,5 @@ COMMON_DSL_TOKENS = {
     "count",
     "apply",
 }
+
+INCONFIDENCE_THRESHOLD = 0.5
