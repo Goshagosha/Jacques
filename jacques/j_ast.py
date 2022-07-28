@@ -15,6 +15,9 @@ class Argument(ABC):
     def __repr__(self):
         return self.value
 
+    def __str__(self):
+        return str(self.value)
+
 
 class NumberArgument(Argument):
     def __init__(self, value) -> None:

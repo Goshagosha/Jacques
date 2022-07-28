@@ -1,6 +1,6 @@
 from jacques.matcher import Matcher
 from jacques.parser.dsl_parser import DslParser
-from jacques.parser.python_parser import PythonParser
+from jacques.parser.new_python_parser import PythonParser
 from jacques.problem_knowledge import ProblemKnowledge
 
 import jacques.world_knowledge as world_knowledge
@@ -48,4 +48,9 @@ py = "print(pd.concat([data.drop(columns=['Active', 'Country/Region'])['Confirme
 spark_py = "data.drop(['Active', 'Country/Region']).filter('Confirmed' < 20).groupBy(['Deaths']).unionByName(other_dataframe).join(another_df, on=['SNo'], how='outer').sort(['Recovered'], ascending=[False]).describe().show()"
 
 j = Jacques(world_knowledge)
-j.load_example_file("training_examples/spark/advanced.py")
+
+j.load_example_data(dsl, py)
+j.matcher.code_family_header[0].samples[0].visualize(f"dsls/new_dsl")
+
+
+# j.load_example_file("training_examples/spark/advanced.py")

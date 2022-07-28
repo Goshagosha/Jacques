@@ -1,4 +1,7 @@
 import ast, copy
+from typing import Any
+
+from click import argument
 from jacques.j_ast import *
 from jacques.parser.parser import Parser
 from jacques.problem_knowledge import ProblemKnowledge
@@ -7,87 +10,132 @@ from jacques.utils import is_float
 
 
 class PythonParser(Parser):
+    class CommandBuffer:
+        def __init__(self) -> None:
+            self.flush()
+
+        def flush(self):
+            self.arguments = None
+
+        def __setattr__(self, __name: str, __value: Any) -> None:
+            if __value != None and self.__getattribute__(__name) != None:
+                raise Exception("Trying to overwrite set attribute")
+            super().__setattr__(__name, __value)
+
     def __init__(self, world_knowledge, problem_knowledge: ProblemKnowledge) -> None:
-        self.next_call_node = None
-        self.jast_in_focus = None
+        self.next_subtree = None
+        self.old_jast = None
+        self.command_buffer = PythonParser.CommandBuffer()
         super().__init__(world_knowledge, problem_knowledge)
 
-    def _set_next_call_node(self, node):
-        if self.next_call_node:
+    def set_next_subtree(self, node):
+        if node == None:
+            self.next_subtree = None
+        elif self.next_subtree:
             raise Exception("Found call node twice - this is not a linear program!")
-        self.next_call_node = node
+        else:
+            self.next_subtree = node
 
     def parse(self, source_string: str) -> CodeJAST:
-        jast = CodeJAST()
-        self.jast_in_focus = jast
-        tree = ast.parse(source_string)
+        subtrees = []
+        self.set_next_subtree(ast.parse(source_string).body[0].value)
+        while self.next_subtree != None:
+            processing = self.next_subtree
+            self.set_next_subtree(None)
+            subtree = TreeChopper(calling_parser=self).visit(processing)
+            subtrees.append(subtree)
 
-        # find entry call
-        call_node = tree.body[0].value
+        root_jast = CodeJAST()
+        self.jast = root_jast
+        for subtree in subtrees:
+            JastBuilder(calling_parser=self).visit(subtree)
+            self.jast.code_ast = subtree
+            if self.old_jast != None:
+                self.old_jast.child = self.jast
+            self.old_jast = self.jast
+            self.jast = CodeJAST()
+        return root_jast
 
-        while call_node != None:
-            self.jast_in_focus.code_ast = copy.deepcopy(call_node)
-            self._infer_command_name(call_node)
-            if isinstance(call_node, ast.Call):
-                for arg in call_node.args:
-                    self.jast_in_focus.arguments += self._resolve_argument(arg)
-                # keywords we flatten
-                for kw in call_node.keywords:
-                    self.jast_in_focus.arguments += [KeywordArgument(kw.arg)]
-                    self.jast_in_focus.arguments += self._resolve_argument(kw.value)
-            elif isinstance(call_node, ast.Subscript):
-                self.jast_in_focus.arguments += self._resolve_argument(call_node.value)
-                self.jast_in_focus.arguments += self._resolve_argument(call_node.slice)
-            else:
-                raise NotImplementedError
+    class Placeholder:
+        def __init__(self) -> None:
+            pass
 
-            call_node = self.next_call_node
-            self.next_call_node = None
-            if call_node:
-                self.jast_in_focus.child = CodeJAST()
-                self.jast_in_focus = self.jast_in_focus.child
 
-        return jast
+class JastBuilder(ast.NodeVisitor):
+    def __init__(self, calling_parser) -> None:
+        self.jast = calling_parser.jast
+        super().__init__()
 
-    def _infer_command_name(self, node):
-        if isinstance(node, ast.Call):
-            if isinstance(node.func, ast.Name):
-                self.jast_in_focus.command = node.func.id
-            elif isinstance(node.func, ast.Attribute):
-                self.jast_in_focus.command = node.func.attr
-                self.jast_in_focus.arguments += self._resolve_argument(node.func.value)
-            else:
-                raise NotImplementedError("Unhandled Call().func type")
-        elif isinstance(node, ast.Subscript):
-            self.jast_in_focus.command = "subscript"
+    def visit_Call(self, node: ast.Call) -> Any:
+        if isinstance(node.func, ast.Name):
+            self.jast.command = node.func.id
+        elif isinstance(node.func, ast.Attribute):
+            self.jast.command = node.func.attr
+        for each in node.args:
+            self.jast.arguments += _resolve_argument(each)
+        for each in node.keywords:
+            self.jast.arguments += [StringArgument(each.arg)]
+            self.jast.arguments += _resolve_argument(each.value)
+
+    def visit_Subscript(self, node: ast.Subscript) -> Any:
+        self.jast.command = "subscript"
+        self.jast.arguments += _resolve_argument(node.value)
+        self.jast.arguments += _resolve_argument(node.slice)
+
+    def generic_visit(self, node) -> Any:
+        return None
+
+
+class TreeChopper(ast.NodeTransformer):
+    def __init__(self, calling_parser: PythonParser) -> None:
+        self.calling_parser = calling_parser
+        self.first_visit = True
+        super().__init__()
+
+    def visit_Call(self, node: ast.Call):
+        if not self.first_visit:
+            self.calling_parser.set_next_subtree(node)
+            return [PythonParser.Placeholder()]
+        self.first_visit = False
+        return super().generic_visit(node)
+
+    def visit_Subscript(self, node: ast.Subscript):
+        if not self.first_visit:
+            self.calling_parser.set_next_subtree(node)
+            return [PythonParser.Placeholder()]
+        self.first_visit = False
+        return super().generic_visit(node)
+
+    def generic_visit(self, node: ast.AST) -> ast.AST:
+        if isinstance(node, PythonParser.Placeholder):
+            return None
+        return super().generic_visit(node)
+
+
+def _resolve_argument(node) -> List[Argument]:
+    if isinstance(node, ast.Constant):
+        if is_float(node.value):
+            return [NumberArgument(node.value)]
         else:
-            raise NotImplementedError
-
-    def _resolve_argument(self, node) -> List[Argument]:
-        if isinstance(node, (ast.Subscript, ast.Call)):
-            self._set_next_call_node(node)
-        elif isinstance(node, ast.Constant):
-            if is_float(node.value):
-                return [NumberArgument(node.value)]
-            else:
-                return [StringArgument(str(node.value))]
-        elif isinstance(node, ast.Name):
-            return [KeywordArgument(node.id)]
-        elif isinstance(node, ast.List):
-            l = []
-            for each in node.elts:
-                l += self._resolve_argument(each)
-            return [ListArgument(l)]
-        elif isinstance(node, ast.Compare):
-            return [
-                OperationArgument(
-                    *self._resolve_argument(node.left),
-                    str(node.ops[0]),
-                    *self._resolve_argument(node.comparators[0]),
-                )
-            ]
-        # we could handle this, but let's just try to collaps unknown:
-        # elif isinstance(node, ast.Subscript):
-        else:
-            return [self._resolve_argument(each) for each in ast.iter_child_nodes(node)]
+            return [StringArgument(str(node.value))]
+    elif isinstance(node, ast.Name):
+        return [KeywordArgument(node.id)]
+    elif isinstance(node, ast.List):
+        l = []
+        for each in node.elts:
+            l += _resolve_argument(each)
+        return [ListArgument(l)]
+    elif isinstance(node, ast.Compare):
+        return [
+            OperationArgument(
+                *_resolve_argument(node.left),
+                str(node.ops[0]),
+                *_resolve_argument(node.comparators[0]),
+            )
+        ]
+    elif isinstance(node, list):
+        return [_resolve_argument(each) for each in node]
+    elif isinstance(node, PythonParser.Placeholder):
         return []
+    else:
+        return [_resolve_argument(each) for each in ast.iter_child_nodes(node)]
