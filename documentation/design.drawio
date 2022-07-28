@@ -1,6 +1,6 @@
-<mxfile host="app.diagrams.net" modified="2022-07-16T14:59:25.827Z" agent="5.0 (Windows)" etag="pF0MNP-Rf2mOAb5gL22T" version="20.1.1" type="github">
+<mxfile host="app.diagrams.net" modified="2022-07-28T13:28:52.845Z" agent="5.0 (Windows)" etag="n-pK1l0titREfBF4mxIk" version="20.1.1" type="github">
   <diagram id="MzWI8Xbqk4ogClHRenAQ" name="Page-1">
-    <mxGraphModel dx="1185" dy="603" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="1422" dy="724" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -133,7 +133,7 @@
             <mxPoint x="500" y="590" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="j6rCjOf4KR4LdH4R0Cua-60" value="" style="endArrow=classic;html=1;rounded=0;fontFamily=Courier New;fontSize=12;strokeWidth=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" parent="1" edge="1" source="HDfJS3hetedEApgrcwt5-2">
+        <mxCell id="j6rCjOf4KR4LdH4R0Cua-60" value="" style="endArrow=classic;html=1;rounded=0;fontFamily=Courier New;fontSize=12;strokeWidth=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" parent="1" source="HDfJS3hetedEApgrcwt5-2" edge="1">
           <mxGeometry width="50" height="50" relative="1" as="geometry">
             <mxPoint x="300" y="509.71" as="sourcePoint" />
             <mxPoint x="220" y="509.71" as="targetPoint" />
@@ -150,34 +150,34 @@
         <mxCell id="j6rCjOf4KR4LdH4R0Cua-63" value="" style="shape=image;html=1;verticalAlign=top;verticalLabelPosition=bottom;labelBackgroundColor=#ffffff;imageAspect=0;aspect=fixed;image=https://cdn4.iconfinder.com/data/icons/ionicons/512/icon-ios7-glasses-outline-128.png;rounded=0;shadow=0;fontFamily=Helvetica;fontSize=12;fontColor=#000000;" parent="1" vertex="1">
           <mxGeometry x="358" y="680" width="13" height="13" as="geometry" />
         </mxCell>
-        <mxCell id="HDfJS3hetedEApgrcwt5-7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontSize=15;startArrow=classic;startFill=1;" edge="1" parent="1" source="HDfJS3hetedEApgrcwt5-2" target="j6rCjOf4KR4LdH4R0Cua-52">
+        <mxCell id="HDfJS3hetedEApgrcwt5-7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontSize=15;startArrow=classic;startFill=1;" parent="1" source="HDfJS3hetedEApgrcwt5-2" target="j6rCjOf4KR4LdH4R0Cua-52" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="HDfJS3hetedEApgrcwt5-2" value="&lt;font style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;Syntax Resolver&lt;br&gt;&lt;/b&gt;&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+        <mxCell id="HDfJS3hetedEApgrcwt5-2" value="&lt;font style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;Ruleset Synthesizer&lt;br&gt;&lt;/b&gt;&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="299.5" y="480" width="130" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="HDfJS3hetedEApgrcwt5-4" value="" style="endArrow=classic;html=1;rounded=0;fontFamily=Courier New;fontSize=12;strokeWidth=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" target="HDfJS3hetedEApgrcwt5-2">
+        <mxCell id="HDfJS3hetedEApgrcwt5-4" value="" style="endArrow=classic;html=1;rounded=0;fontFamily=Courier New;fontSize=12;strokeWidth=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="1" target="HDfJS3hetedEApgrcwt5-2" edge="1">
           <mxGeometry width="50" height="50" relative="1" as="geometry">
             <mxPoint x="500" y="510" as="sourcePoint" />
             <mxPoint x="420" y="509.71000000000004" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="HDfJS3hetedEApgrcwt5-8" value="" style="endArrow=none;dashed=1;html=1;strokeWidth=2;rounded=0;fontSize=15;dashPattern=1 1;" edge="1" parent="1">
+        <mxCell id="HDfJS3hetedEApgrcwt5-8" value="" style="endArrow=none;dashed=1;html=1;strokeWidth=2;rounded=0;fontSize=15;dashPattern=1 1;" parent="1" edge="1">
           <mxGeometry width="50" height="50" relative="1" as="geometry">
             <mxPoint x="560" y="810" as="sourcePoint" />
             <mxPoint x="364" y="555" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="HDfJS3hetedEApgrcwt5-9" value="" style="endArrow=none;dashed=1;html=1;strokeWidth=2;rounded=0;fontSize=15;dashPattern=1 1;" edge="1" parent="1">
+        <mxCell id="HDfJS3hetedEApgrcwt5-9" value="" style="endArrow=none;dashed=1;html=1;strokeWidth=2;rounded=0;fontSize=15;dashPattern=1 1;" parent="1" edge="1">
           <mxGeometry width="50" height="50" relative="1" as="geometry">
             <mxPoint x="560" y="720" as="sourcePoint" />
             <mxPoint x="460" y="590" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="HDfJS3hetedEApgrcwt5-11" value="&lt;p style=&quot;font-size: 13px;&quot;&gt;&lt;font style=&quot;font-size: 13px;&quot; face=&quot;Helvetica&quot;&gt;Enquirer may ask user about the code to dsl translation match. Yes/no updates matrix values.&lt;br&gt;&lt;/font&gt;&lt;/p&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;shadow=0;labelBackgroundColor=default;fontFamily=Helvetica;fontSize=12;fontColor=#000000;" vertex="1" parent="1">
+        <mxCell id="HDfJS3hetedEApgrcwt5-11" value="&lt;p style=&quot;font-size: 13px;&quot;&gt;&lt;font style=&quot;font-size: 13px;&quot; face=&quot;Helvetica&quot;&gt;Enquirer may ask user about the code to dsl translation match. Yes/no updates matrix values.&lt;br&gt;&lt;/font&gt;&lt;/p&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;shadow=0;labelBackgroundColor=default;fontFamily=Helvetica;fontSize=12;fontColor=#000000;" parent="1" vertex="1">
           <mxGeometry x="560" y="700" width="280" height="40" as="geometry" />
         </mxCell>
-        <mxCell id="HDfJS3hetedEApgrcwt5-12" value="&lt;p style=&quot;font-size: 13px;&quot;&gt;&lt;font style=&quot;font-size: 13px;&quot; face=&quot;Helvetica&quot;&gt;Enquirer may ask user about the syntax of the function. Similar trees are grouped in the header of the same column/row in the Theory matrix.&lt;/font&gt;&lt;/p&gt;&lt;p style=&quot;font-size: 13px;&quot;&gt;&lt;font style=&quot;font-size: 13px;&quot; face=&quot;Helvetica&quot;&gt;Syntax resolver will try to infer syntax from multiple examples.&lt;/font&gt;&lt;/p&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;shadow=0;labelBackgroundColor=default;fontFamily=Helvetica;fontSize=12;fontColor=#000000;" vertex="1" parent="1">
+        <mxCell id="HDfJS3hetedEApgrcwt5-12" value="&lt;p style=&quot;font-size: 13px;&quot;&gt;&lt;font style=&quot;font-size: 13px;&quot; face=&quot;Helvetica&quot;&gt;Enquirer may ask user about the syntax of the function. Similar trees are grouped in the header of the same column/row in the Theory matrix.&lt;/font&gt;&lt;/p&gt;&lt;p style=&quot;font-size: 13px;&quot;&gt;&lt;font style=&quot;font-size: 13px;&quot; face=&quot;Helvetica&quot;&gt;Syntax resolver will try to infer syntax from multiple examples.&lt;/font&gt;&lt;/p&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;shadow=0;labelBackgroundColor=default;fontFamily=Helvetica;fontSize=12;fontColor=#000000;" parent="1" vertex="1">
           <mxGeometry x="560" y="820" width="280" height="40" as="geometry" />
         </mxCell>
       </root>
