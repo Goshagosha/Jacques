@@ -1,6 +1,6 @@
 from jacques.matcher import Matcher
 from jacques.parser.dsl_parser import DslParser
-from jacques.parser.new_python_parser import PythonParser
+from jacques.parser.python_parser import PythonParser
 from jacques.problem_knowledge import ProblemKnowledge
 
 import jacques.world_knowledge as world_knowledge
