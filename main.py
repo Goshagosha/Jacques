@@ -12,14 +12,8 @@ class Jacques:
         self.rule_synth = rule_synth
         self.world_knowledge = world_knowledge
         self.problem_knowledge = ProblemKnowledge()
-        self.dsl_parser = DslParser(
-            world_knowledge=self.world_knowledge,
-            problem_knowledge=self.problem_knowledge,
-        )
-        self.python_parser = PythonParser(
-            world_knowledge=self.world_knowledge,
-            problem_knowledge=self.problem_knowledge,
-        )
+        self.dsl_parser = DslParser(jacques=self)
+        self.python_parser = PythonParser(jacques=self)
         self.matcher = Matcher(jacques=self)
         self.rule_set = None
 
@@ -27,7 +21,6 @@ class Jacques:
         dsl_tree = self.dsl_parser.parse(dsl_string)
         code_tree = self.python_parser.parse(code_string)
         self.matcher.load_sample(dsl_tree, code_tree)
-        print(self.matcher.next_most_probable_pairing())
 
     def load_example_file(self, path):
         dsl = None
@@ -47,17 +40,13 @@ class Jacques:
         return self.rule_set
 
 
-dsl = "on data | drop columns 'Active', 'Country/Region' | select rows 'Confirmed' < 20 | group by 'Deaths' | union other_dataframe | join outer another_df on 'SNo' | sort by 'Recovered' descending | describe | show"
-py = "print(pd.concat([data.drop(columns=['Active', 'Country/Region'])['Confirmed' < 20].groupby(['Deaths']), other_dataframe]).join(another_df, on=['SNo'], how='outer').sort_values(['Recovered'], axis='index', ascending=[False]).describe()) "
-spark_py = "data.drop(['Active', 'Country/Region']).filter('Confirmed' < 20).groupBy(['Deaths']).unionByName(other_dataframe).join(another_df, on=['SNo'], how='outer').sort(['Recovered'], ascending=[False]).describe().show()"
-
-branched_py = 'data.join(other_df, on=["Confirmed"], how="left").withColumn("Active", "Confirmed" - "Deaths").agg(sum("Active").alias("Total Active"))'
+# dsl = "on data | drop columns 'Active', 'Country/Region' | select rows 'Confirmed' < 20 | group by 'Deaths' | union other_dataframe | join outer another_df on 'SNo' | sort by 'Recovered' descending | describe | show"
+# py = "print(pd.concat([data.drop(columns=['Active', 'Country/Region'])['Confirmed' < 20].groupby(['Deaths']), other_dataframe]).join(another_df, on=['SNo'], how='outer').sort_values(['Recovered'], axis='index', ascending=[False]).describe()) "
+# spark_py = "data.drop(['Active', 'Country/Region']).filter('Confirmed' < 20).groupBy(['Deaths']).unionByName(other_dataframe).join(another_df, on=['SNo'], how='outer').sort(['Recovered'], ascending=[False]).describe().show()"
+dsl = "on data | apply max on 'Active' as 'Top Active'"
+py = "data.agg(max('Active').alias('Top Active'))"
 
 j = Jacques(world_knowledge, rule_synth)
 
-# j.load_example_file("training_examples/spark/no_logical_inference.py")
+j.load_example_data(dsl, py)
 # ruleset = j.infer_ruleset()
-
-
-t = j.python_parser.parse(py)
-t.visualize("branched_tree")

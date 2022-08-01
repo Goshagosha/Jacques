@@ -10,8 +10,8 @@ from jacques.utils import is_float
 
 
 class PythonParser(Parser):
-    def __init__(self, world_knowledge, problem_knowledge: ProblemKnowledge) -> None:
-        super().__init__(world_knowledge, problem_knowledge)
+    def __init__(self, jacques) -> None:
+        super().__init__(jacques)
 
     def parse(self, source_string: str) -> CodeJAST:
         entry_tree = ast.parse(source_string).body[0].value
@@ -29,6 +29,7 @@ class JastBuilder(ast.NodeVisitor):
     def __init__(self, jast: CodeJAST = None) -> None:
         if jast == None:
             self.jast = CodeJAST()
+            self.jast.depth = 0
         else:
             self.jast = jast
         super().__init__()
@@ -40,6 +41,7 @@ class JastBuilder(ast.NodeVisitor):
 
     def make_child(self):
         new_jast = CodeJAST()
+        new_jast.depth = self.jast.depth + 1
         self.jast.add_child(new_jast)
         self.jast = new_jast
 

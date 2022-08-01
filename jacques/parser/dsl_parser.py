@@ -8,9 +8,12 @@ from jacques.utils import is_float
 class DslParser(Parser):
     def parse(self, source_string: str) -> DslJAST:
         jast = DslJAST()
+        depth = 0
         jast_in_focus = jast
         query_sequence = source_string.split(" | ")
         while len(query_sequence) > 0:
+            jast_in_focus.depth = depth
+            depth += 1
             subquery = query_sequence.pop(-1)
             jast_in_focus.dsl_string = subquery
             if subquery in self.world_knowledge.COMMON_DSL_TOKENS:

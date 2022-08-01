@@ -4,9 +4,9 @@ from jacques.problem_knowledge import ProblemKnowledge
 
 
 class Parser(ABC):
-    def __init__(self, world_knowledge, problem_knowledge: ProblemKnowledge) -> None:
-        self.world_knowledge = world_knowledge
-        self.problem_knowledge = problem_knowledge
+    def __init__(self, jacques) -> None:
+        self.world_knowledge = jacques.world_knowledge
+        self.problem_knowledge = jacques.problem_knowledge
 
     @abstractmethod
     def parse(self, source_string: str) -> JAST:
