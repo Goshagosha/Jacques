@@ -2,6 +2,8 @@ import numpy as np
 
 
 def is_float(string):
+    if isinstance(string, bool):
+        return False
     try:
         return float(string) and True
     except ValueError:

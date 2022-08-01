@@ -4,10 +4,12 @@ from jacques.parser.python_parser import PythonParser
 from jacques.problem_knowledge import ProblemKnowledge
 
 import jacques.world_knowledge as world_knowledge
+from jacques.ruleset_synthesizer import generate_mock_rule as rule_synth
 
 
 class Jacques:
-    def __init__(self, world_knowledge):
+    def __init__(self, world_knowledge, rule_synth):
+        self.rule_synth = rule_synth
         self.world_knowledge = world_knowledge
         self.problem_knowledge = ProblemKnowledge()
         self.dsl_parser = DslParser(
@@ -18,10 +20,8 @@ class Jacques:
             world_knowledge=self.world_knowledge,
             problem_knowledge=self.problem_knowledge,
         )
-        self.matcher = Matcher(
-            world_knowledge=self.world_knowledge,
-            problem_knowledge=self.problem_knowledge,
-        )
+        self.matcher = Matcher(jacques=self)
+        self.rule_set = None
 
     def load_example_data(self, dsl_string, code_string):
         dsl_tree = self.dsl_parser.parse(dsl_string)
@@ -42,15 +42,22 @@ class Jacques:
                     dsl = line[3:]
                     next_line_is_code = True
 
+    def infer_ruleset(self):
+        self.rule_set = self.matcher.generate_rules()
+        return self.rule_set
+
 
 dsl = "on data | drop columns 'Active', 'Country/Region' | select rows 'Confirmed' < 20 | group by 'Deaths' | union other_dataframe | join outer another_df on 'SNo' | sort by 'Recovered' descending | describe | show"
 py = "print(pd.concat([data.drop(columns=['Active', 'Country/Region'])['Confirmed' < 20].groupby(['Deaths']), other_dataframe]).join(another_df, on=['SNo'], how='outer').sort_values(['Recovered'], axis='index', ascending=[False]).describe()) "
 spark_py = "data.drop(['Active', 'Country/Region']).filter('Confirmed' < 20).groupBy(['Deaths']).unionByName(other_dataframe).join(another_df, on=['SNo'], how='outer').sort(['Recovered'], ascending=[False]).describe().show()"
 
-j = Jacques(world_knowledge)
+branched_py = 'data.join(other_df, on=["Confirmed"], how="left").withColumn("Active", "Confirmed" - "Deaths").agg(sum("Active").alias("Total Active"))'
 
-j.load_example_data(dsl, py)
-j.matcher.code_family_header[0].samples[0].visualize(f"dsls/new_dsl")
+j = Jacques(world_knowledge, rule_synth)
+
+# j.load_example_file("training_examples/spark/no_logical_inference.py")
+# ruleset = j.infer_ruleset()
 
 
-# j.load_example_file("training_examples/spark/advanced.py")
+t = j.python_parser.parse(py)
+t.visualize("branched_tree")

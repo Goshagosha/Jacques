@@ -1,10 +1,35 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from enum import Enum
+import copy
 from typing import List
 import graphviz
 
 from jacques.utils import id_generator
+
+
+class Visualizeable(ABC):
+    id_generator = id_generator()
+
+    @abstractmethod
+    def _visualize_recursive(self, graph) -> str:
+        ...
+
+
+class VisualizeableLeaf(Visualizeable):
+    def _visualize_recursive(self, graph) -> str:
+        id = next(self.id_generator)
+        graph.node(id, str(self))
+        return id
+
+
+class VisualizeableTree(Visualizeable):
+    def _visualize_recursive(self, graph) -> str:
+        id = next(self.id_generator)
+        name = str(type(self).__name__)
+        graph.node(id, label=name)
+        for each in self.value:
+            graph.edge(id, each._visualize_recursive(graph))
+        return id
 
 
 class Argument(ABC):
@@ -19,34 +44,24 @@ class Argument(ABC):
         return str(self.value)
 
 
-class NumberArgument(Argument):
+class NumberArgument(Argument, VisualizeableLeaf):
     def __init__(self, value) -> None:
         self.value = value
 
 
-class StringArgument(Argument):
+class StringArgument(Argument, VisualizeableLeaf):
+    def __init__(self, value) -> None:
+        self.value = str(value)
+
+
+class KeywordArgument(Argument, VisualizeableLeaf):
     def __init__(self, value) -> None:
         self.value = value
 
 
-class KeywordArgument(Argument):
-    def __init__(self, value) -> None:
-        self.value = value
-
-
-class ListArgument(Argument):
+class ListArgument(Argument, VisualizeableTree):
     def __init__(self, value: List[Argument]) -> None:
         self.value = value
-
-    def _plot_to_graph(self, graph, id_generator) -> str:
-        id = next(id_generator)
-        name = str(type(self))
-        graph.node(id, label=name)
-        for each in self.value:
-            each_id = next(id_generator)
-            graph.node(each_id, str(each))
-            graph.edge(id, each_id)
-        return id
 
     def __iter__(self):
         return ListArgumentIterator(self)
@@ -69,22 +84,17 @@ class ListArgumentIterator:
             raise StopIteration
 
 
-class OperationArgument(Argument):
+class ExpressionArgument(Argument, VisualizeableTree):
+    def __init__(self, left, op, right) -> None:
+        self.value = (left, StringArgument(op), right)
+
+
+class OperationArgument(Argument, VisualizeableTree):
     def __init__(self, left: Argument, operator: str, right: Argument) -> None:
-        self.value = (left, operator, right)
+        self.value = (left, StringArgument(operator), right)
 
     def __repr__(self):
         return str(list(self.value))
-
-    def _plot_to_graph(self, graph, id_generator) -> str:
-        id = next(id_generator)
-        name = str(type(self))
-        graph.node(id, label=name)
-        for each in self.value:
-            each_id = next(id_generator)
-            graph.node(each_id, str(each))
-            graph.edge(id, each_id)
-        return id
 
 
 def flatten_argument_set(_list: List[Argument]):
@@ -99,11 +109,20 @@ def flatten_argument_set(_list: List[Argument]):
     return result
 
 
-class JAST:
+class JAST(Visualizeable):
     def __init__(self) -> None:
         self.command = None
-        self.child = None
+        self.children = []
+        self.parent = None
         self.arguments: List[Argument] = []
+
+    def set_parent(self, parent: JAST):
+        self.parent = parent
+        parent.children.append(self)
+
+    def add_child(self, child: JAST):
+        self.children.append(child)
+        child.parent = self
 
     def compare(self, another_ast: JAST) -> int:
         score = 0
@@ -115,29 +134,36 @@ class JAST:
         for each in this_buffer_of_args:
             for every in other_buffer_of_args:
                 score += int(each == every)
-
         return score
 
     def visualize(self, export_name) -> None:
         graph = graphviz.Graph(name=export_name, format="png")
-        id_gen = id_generator()
-        self._visualize_recursive(graph, id_gen)
+        self._visualize_recursive(graph)
         graph.render()
 
-    def _visualize_recursive(self, graph, id_generator) -> str:
-        id = next(id_generator)
+    def _visualize_recursive(self, graph) -> str:
+        id = next(self.id_generator)
         graph.node(id, label=self.command, shape="diamond")
-        if self.child:
-            child_id = self.child._visualize_recursive(graph, id_generator)
+        for child in self.children:
+            child_id = child._visualize_recursive(graph)
             graph.edge(id, child_id)
         for arg in self.arguments:
-            if isinstance(arg, (ListArgument, OperationArgument)):
-                arg_id = arg._plot_to_graph(graph, id_generator)
-            else:
-                arg_id = next(id_generator)
-                graph.node(arg_id, label=str(arg))
+            arg_id = arg._visualize_recursive(graph)
             graph.edge(id, arg_id)
         return id
+
+    def __contains__(self, other_ast):
+        other_command = other_ast.command
+        if self.command == other_command:
+            return True
+        for child in self.children:
+            if other_ast in child:
+                return True
+        return False
+
+    def __sub__(self, other_ast):
+        j = copy.deepcopy(self)
+        raise NotImplementedError
 
 
 class CodeJAST(JAST):

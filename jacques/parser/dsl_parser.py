@@ -24,8 +24,8 @@ class DslParser(Parser):
                         )
                         break
             if len(query_sequence) > 0:
-                jast_in_focus.child = DslJAST()
-                jast_in_focus = jast_in_focus.child
+                jast_in_focus.children = [DslJAST()]
+                jast_in_focus = jast_in_focus.children[0]
         return jast
 
     def _process_arguments_string(self, source_string: str) -> List:
