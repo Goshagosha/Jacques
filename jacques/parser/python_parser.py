@@ -1,10 +1,8 @@
 import ast
-from ensurepip import bootstrap
 from typing import Any
 
 from jacques.j_ast import *
 from jacques.parser.parser import Parser
-from jacques.problem_knowledge import ProblemKnowledge
 
 from jacques.utils import is_float
 
@@ -16,6 +14,7 @@ class PythonParser(Parser):
     def parse(self, source_string: str) -> CodeJAST:
         entry_tree = ast.parse(source_string).body[0].value
         bootstrap_jast = JastBuilder().visit(entry_tree)
+        bootstrap_jast.inverse_depth_rec()
         if len(bootstrap_jast.children) == 0:
             return bootstrap_jast
         return bootstrap_jast.children[0]
@@ -29,7 +28,7 @@ class JastBuilder(ast.NodeVisitor):
     def __init__(self, jast: CodeJAST = None) -> None:
         if jast == None:
             self.jast = CodeJAST()
-            self.jast.depth = 0
+            self.jast.depth = -1
         else:
             self.jast = jast
         super().__init__()
@@ -57,6 +56,7 @@ class JastBuilder(ast.NodeVisitor):
         for each in node.keywords:
             self.jast.arguments.append(StringArgument(each.arg))
             JastBuilder(self.jast).visit(each.value)
+        self.jast.code_ast = node
 
     def visit_BoolOp(self, node: ast.BoolOp) -> Any:
         left = JastBuilder().visit(node.values[0]).arguments[0]
@@ -68,6 +68,7 @@ class JastBuilder(ast.NodeVisitor):
         self.jast.command = "subscript"
         JastBuilder(self.jast).visit(node.value)
         JastBuilder(self.jast).visit(node.slice)
+        self.jast.code_ast = node
 
     def visit_Constant(self, node: ast.Constant) -> Any:
         if is_float(node.value):

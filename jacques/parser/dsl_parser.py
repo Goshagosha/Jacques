@@ -6,11 +6,13 @@ from jacques.utils import is_float
 
 
 class DslParser(Parser):
-    def parse(self, source_string: str) -> DslJAST:
+    def parse(self, source_string: str, dump_entry_point=True) -> DslJAST:
         jast = DslJAST()
         depth = 0
         jast_in_focus = jast
         query_sequence = source_string.split(" | ")
+        if dump_entry_point:
+            query_sequence = query_sequence[1:]
         while len(query_sequence) > 0:
             jast_in_focus.depth = depth
             depth += 1
@@ -71,11 +73,8 @@ class DslParser(Parser):
             return StringArgument(string)
         if is_float(string):
             return NumberArgument(string)
-        if (
-            string in self.problem_knowledge.encountered_object_names
-            or string in self.problem_knowledge.encountered_variables
-        ):
+        if string in self.jacques.encountered_objects:
             return KeywordArgument(string)
         # otherwise we append the keyword, there might be some logic to exploit here
-        self.problem_knowledge.encountered_object_names.append(string)
+        self.jacques.encountered_objects.append(string)
         return KeywordArgument(string)
