@@ -8,6 +8,32 @@ if TYPE_CHECKING:
     from main import Jacques
 
 
+class Pipe(ast.AST):
+    def __init__(self, placeholding_for: ast.Call | ast.Subscript) -> None:
+        self.placeholding_for = placeholding_for
+
+
+class SubtreeIsolator(ast.NodeTransformer):
+    def __init__(self, parts_of_subtree: List[ast.AST]) -> None:
+        self.parts_of_subtree: List[ast.AST] = parts_of_subtree
+        super().__init__()
+
+    def visit_Call(self, node: ast.Call):
+        if node not in self.parts_of_subtree:
+            return Pipe(placeholding_for=node)
+        return self.generic_visit(node)
+
+    def visit_Subscript(self, node: ast.Subscript):
+        if node not in self.parts_of_subtree:
+            return Pipe(placeholding_for=node)
+        return self.generic_visit(node)
+
+    def generic_visit(self, node: ast.AST) -> ast.AST:
+        if isinstance(node, Pipe):
+            return None
+        return super().generic_visit(node)
+
+
 class Rule:
     def __init__(
         self,
@@ -22,7 +48,10 @@ class Rule:
         for each in code_jast_list:
             if each.depth < root_codejast.depth:
                 root_codejast = each
-        unparsed = ast.unparse(root_codejast.code_ast)
+        isolated_subtree: ast.AST = SubtreeIsolator(
+            [jast.code_ast for jast in code_jast_list]
+        ).visit(root_codejast.code_ast)
+
         pass
 
 

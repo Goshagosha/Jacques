@@ -38,7 +38,7 @@ class Jacques:
         self.rule_synthesizer = RuleSynthesizer(jacques=self)
         self.ruleset: Dict[str, Rule] = {}
         self.encountered_objects: List[str] = []
-        self.jast_storage : JastStorage = JastStorage()
+        self.jast_storage: JastStorage = JastStorage()
 
     def append_rules(self, new_rules) -> None:
         self.ruleset.extend(new_rules)
@@ -81,11 +81,11 @@ class Jacques:
                     next_line_is_code = True
 
 
-# dsl = "on data | drop columns 'Active', 'Country/Region' | select rows 'Confirmed' < 20 | group by 'Deaths' | union other_dataframe | join outer another_df on 'SNo' | sort by 'Recovered' descending | describe | show"
-# py = "print(pd.concat([data.drop(columns=['Active', 'Country/Region'])['Confirmed' < 20].groupby(['Deaths']), other_dataframe]).join(another_df, on=['SNo'], how='outer').sort_values(['Recovered'], axis='index', ascending=[False]).describe()) "
+dsl = "on data | drop columns 'Active', 'Country/Region' | select rows 'Confirmed' < 20 | group by 'Deaths' | union other_dataframe | join outer another_df on 'SNo' | sort by 'Recovered' descending | describe | show"
+py = "print(pd.concat([data.drop(columns=['Active', 'Country/Region'])['Confirmed' < 20].groupby(['Deaths']), other_dataframe]).join(another_df, on=['SNo'], how='outer').sort_values(['Recovered'], axis='index', ascending=[False]).describe()) "
 # spark_py = "data.drop(['Active', 'Country/Region']).filter('Confirmed' < 20).groupBy(['Deaths']).unionByName(other_dataframe).join(another_df, on=['SNo'], how='outer').sort(['Recovered'], ascending=[False]).describe().show()"
-dsl = "on data | apply max on 'Active' as 'Top Active'"
-py = "data.agg(max('Active').alias('Top Active'))"
+# dsl = "on data | apply max on 'Active' as 'Top Active'"
+# py = "data.agg(max('Active').alias('Top Active'))"
 
 j = Jacques(world_knowledge)
 
