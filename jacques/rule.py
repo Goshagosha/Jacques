@@ -13,6 +13,24 @@ class Pipe(ast.AST):
         self.placeholding_for = placeholding_for
 
 
+class Arg(ast.AST):
+    def __init__(self, index, examples) -> None:
+        self.index = index
+        self.examples = examples
+
+    def __repr__(self) -> str:
+        return f"<ARG{self.index}>"
+
+
+class Lst(ast.AST):
+    def __init__(self, index, examples) -> None:
+        self.index = index
+        self.examples = examples
+
+    def __repr__(self) -> str:
+        return f"<LST{self.index}>"
+
+
 class SubtreeIsolator(ast.NodeTransformer):
     def __init__(self, parts_of_subtree: List[ast.AST]) -> None:
         self.parts_of_subtree: List[ast.AST] = parts_of_subtree
@@ -51,8 +69,13 @@ class Rule:
         isolated_subtree: ast.AST = SubtreeIsolator(
             [jast.code_ast for jast in code_jast_list]
         ).visit(root_codejast.code_ast)
-
         pass
+
+        self.rule = "<PIPE>.join(<ARG0>, how=<ARG1>, on=<LST0>)"
+
+    def render(self, *input):
+        return
+        raise NotImplementedError
 
 
 class RuleSynthesizer:

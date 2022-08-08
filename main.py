@@ -90,12 +90,11 @@ py = "print(pd.concat([data.drop(columns=['Active', 'Country/Region'])['Confirme
 j = Jacques(world_knowledge)
 
 # dt = j.dsl_parser.parse(dsl)
-# dt.visualize('d')
+# dt.visualize("d")
 
 # pt = j.python_parser.parse(py)
-# pt.visualize('p')
+# pt.visualize("p")
 
 j.push_example(dsl, py)
 j.process_all_examples()
-print("poopoo")
-# ruleset = j.infer_ruleset()
+ruleset = j.infer_ruleset()

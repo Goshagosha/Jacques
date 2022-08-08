@@ -1,8 +1,6 @@
 import re
-from typing import List
 from jacques.j_ast import *
 from jacques.parser.parser import Parser
-from jacques.utils import is_float
 
 
 class DslParser(Parser):
@@ -24,7 +22,7 @@ class DslParser(Parser):
                 for i in range(1, len(subquery)):
                     if subquery[:-i] in self.world_knowledge.COMMON_DSL_TOKENS:
                         jast_in_focus.command = subquery[:-i]
-                        jast_in_focus.arguments = self._process_arguments_string(
+                        jast_in_focus.arguments = self._process_arguments(
                             subquery[-i + 1 :]
                         )
                         break
@@ -33,48 +31,35 @@ class DslParser(Parser):
                 jast_in_focus = jast_in_focus.children[0]
         return jast
 
-    def _process_arguments_string(self, source_string: str) -> List:
+    def _process_arguments(self, source_string: str) -> Dict[str, int]:
         matches = re.findall(
             "([\w|\/]+|'[\w|\/|,|\s]+',|'[\w|\/|,|\s]+'|[<>=\-+]+)", source_string
         )
-        result: List[Argument] = []
-        _list_buffer = []
-        _operation_buffer = []
-        for each in matches:
-            # flush operation buffer if we already started filling it
-            if len(_operation_buffer) == 2:
-                resolved = self._resolve_non_list_type(each)
-                _operation_buffer.append(resolved)
-                result.append(
-                    OperationArgument(
-                        _operation_buffer[0], _operation_buffer[1], _operation_buffer[2]
-                    )
-                )
-                _operation_buffer = []
-            # if the word is an operation, its neighbours are concatted into an operation
-            elif re.match("[><=+\-]+", each):
-                _operation_buffer = [result.pop(-1), StringArgument(each)]
-            # if the word ends in comma, its concat with the next into a list
-            elif each[-1] == ",":
-                resolved = self._resolve_non_list_type(each[:-1])
-                _list_buffer.append(resolved)
-            # otherwise flush buffer if it's not empty:
-            elif len(_list_buffer) > 0:
-                resolved = self._resolve_non_list_type(each)
-                _list_buffer.append(resolved)
-                result.append(ListArgument(_list_buffer))
-                _list_buffer = []
-            else:
-                result.append(self._resolve_non_list_type(each))
-        return result
+        result = {}
 
-    def _resolve_non_list_type(self, string: str) -> Argument:
-        if string.startswith("'") or string.startswith('"'):
-            return StringArgument(string)
-        if is_float(string):
-            return NumberArgument(string)
-        if string in self.jacques.encountered_objects:
-            return KeywordArgument(string)
-        # otherwise we append the keyword, there might be some logic to exploit here
-        self.jacques.encountered_objects.append(string)
-        return KeywordArgument(string)
+        group_tag = 0
+        list_is_on = False
+        operation_is_on = False
+
+        for each in matches:
+            if operation_is_on:
+                result[each] = group_tag
+                operation_is_on = False
+                group_tag += 1
+            elif re.match("[><=+\-]+", each):
+                group_tag -= 1
+                result[each] = group_tag
+                operation_is_on = True
+            elif each[-1] == ",":
+                if list_is_on:
+                    result[each] = group_tag
+                else:
+                    list_is_on = True
+            elif list_is_on:
+                result[each] = group_tag
+                list_is_on = False
+                group_tag += 1
+            else:
+                result[each] = group_tag
+                group_tag += 1
+        return result
