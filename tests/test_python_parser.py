@@ -1,4 +1,4 @@
-from jacques.j_ast import (
+from jacques.jast import (
     ExpressionArgument,
     NumberArgument,
     OperationArgument,

@@ -11,8 +11,8 @@ data = pd.read_csv('covid_19_data.csv')
 df1 = pd.DataFrame(data, columns=['Country/Region']).to_csv('save_target.csv') 
 
 # union & save_to json
-## on data | union df1 | save to 'another_save.csv' as json 
-pd.concat([data, df1]).to_json('another_save.csv') 
+## on data | union df1 | save to 'another_save.json' as json 
+pd.concat([data, df1]).to_json('another_save.json') 
 
 # group_by & union
 ## on data | group by 'Country/Region' | union df1 

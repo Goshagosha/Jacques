@@ -2,18 +2,21 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 import numpy as np
 import pandas as pd
+from jacques.jacques_member import JacquesMember
+from .jast_utils import extract_subtree_by_reference_as_reference_list
+
 
 if TYPE_CHECKING:
     from jacques.rule import Rule
     from typing import Dict, List, Tuple
-    from jacques.j_ast import CodeJAST, DslJAST
+    from jacques.jast import CodeJAST, DslJAST
 
 
 class ExampleMatrix:
     def __init__(
         self,
-        dsl_header: List[Tuple[str, DslJAST]],
-        code_header: List[Tuple[str, CodeJAST]],
+        dsl_header: List[DslJAST],
+        code_header: List[CodeJAST],
     ) -> None:
         self.dsl_header = dsl_header
         self.code_header = code_header
@@ -24,22 +27,22 @@ class ExampleMatrix:
         for i in range(y):
             for j in range(x):
                 if (
-                    i <= code_header[j][1].depth
-                    and code_header[j][1].inverse_depth + i >= y - 1
+                    i <= code_header[j].depth
+                    and code_header[j].inverse_depth + i >= y - 1
                 ):
                     self.m[i, j] = 1
 
     def update_with_rules(self, ruleset: Dict[str, Rule]) -> None:
-        for (rule_dsl_name, rule) in ruleset.items():
-            indices = [
-                i
-                for i, (name, _) in enumerate(self.dsl_header)
-                if rule_dsl_name == name
-            ]
-            self.m[indices, :] = 0
-            raise NotImplementedError
-            # TODO
-            # Proper rule handling
+        rule: Rule
+        for rule_name, rule in ruleset.items():
+            # Only if that rule even is applicable to this matrix:
+            if rule_name in [dj.command for dj in self.dsl_header]:
+                rule_used_codejasts = extract_subtree_by_reference_as_reference_list(
+                    self.code_header[0], rule.codejast_subtree
+                )
+                for i, code_jast in enumerate(self.code_header):
+                    if code_jast in rule_used_codejasts:
+                        self.m[:, i] = 0
 
     def exhausted(self):
         return self.m.sum() == 0
@@ -48,8 +51,8 @@ class ExampleMatrix:
         return str(
             pd.DataFrame(
                 self.m,
-                index=[name for name, _ in self.dsl_header],
-                columns=[name for name, _ in self.code_header],
+                index=[d.command for d in self.dsl_header],
+                columns=[code.command for code in self.code_header],
             )
         )
 
@@ -68,27 +71,26 @@ class ExampleMatrix:
                         break
             if solved:
                 matches[i] = list(np.where(self.m[i] == 1)[0])
-            continue
         return matches
 
     def matches(self) -> List[Tuple[DslJAST, List[CodeJAST]]]:
         matches = self.__find_matches()
         result = []
         for i, js in matches.items():
-            dsl_jast = self.dsl_header[i][1]
-            code_jasts = [self.code_header[j][1] for j in js]
+            dsl_jast = self.dsl_header[i]
+            code_jasts = [self.code_header[j] for j in js]
             result.append((dsl_jast, code_jasts))
         return result
 
 
-class Matcher:
+class Matcher(JacquesMember):
     def __init__(self, jacques):
-        self.jacques = jacques
         self.examples = []
+        super().__init__(jacques)
 
     def push_example(self, dsl_jast: DslJAST, code_jast: CodeJAST) -> None:
-        dsl_header = dsl_jast.named_deconstructed()
-        code_header = code_jast.named_deconstructed()
+        dsl_header = list(dsl_jast)
+        code_header = list(code_jast)
 
         m = ExampleMatrix(dsl_header, code_header)
         self.examples.append(m)

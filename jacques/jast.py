@@ -2,6 +2,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from ast import AST
 import copy
+from platform import java_ver
 from typing import Dict, List, Tuple
 import graphviz
 
@@ -81,20 +82,6 @@ class JAST(Visualizeable):
             graph.edge(id, arg_id)
         return id
 
-    def deconstruct(self) -> List[JAST]:
-        deconstructed = []
-        queue = []
-        queue.append(self)
-        while len(queue) > 0:
-            next = queue[0]
-            deconstructed.append(next)
-            queue.extend(next.children)
-            queue = queue[1:] if len(queue) > 1 else []
-        return deconstructed
-
-    def named_deconstructed(self) -> List[Tuple[str, JAST]]:
-        return [(jast.command, jast) for jast in self.deconstruct()]
-
     def __contains__(self, other_ast) -> bool:
         other_command = other_ast.command
         if self.command == other_command:
@@ -108,11 +95,30 @@ class JAST(Visualizeable):
         j = copy.deepcopy(self)
         raise NotImplementedError
 
+    def __iter__(self):
+        """Recursive iterator
+
+        Yields:
+            _type_: _description_
+        """
+        yield self
+        for child in self.children:
+            for node in child:
+                yield node
+
 
 class CodeJAST(JAST):
     def __init__(self):
         self.code_ast: AST = None
         super().__init__()
+
+    def childfree_copy(self) -> CodeJAST:
+        new = CodeJAST()
+        new.command = self.command
+        new.depth = self.depth
+        new.inverse_depth = self.inverse_depth
+        new.code_ast = self.code_ast
+        return new
 
 
 class DslJAST(JAST):

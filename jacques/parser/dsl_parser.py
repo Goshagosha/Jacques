@@ -1,16 +1,22 @@
+from copy import deepcopy
 import re
-from jacques.j_ast import *
-from jacques.parser.parser import Parser
+from jacques.jast import *
+from jacques.jacques_member import JacquesMember
+from ..utils import is_in_quotes, sanitize_from_quotes
+from uuid import uuid4 as uuid
 
 
-class DslParser(Parser):
-    def parse(self, source_string: str, dump_entry_point=True) -> DslJAST:
+class DslParser(JacquesMember):
+    def parse(self, source_string: str) -> DslJAST:
+        try:
+            if source_string[-1:] == "\n":
+                source_string = source_string[:-1]
+        except IndexError:
+            pass
         jast = DslJAST()
         depth = 0
         jast_in_focus = jast
         query_sequence = source_string.split(" | ")
-        if dump_entry_point:
-            query_sequence = query_sequence[1:]
         while len(query_sequence) > 0:
             jast_in_focus.depth = depth
             depth += 1
@@ -22,8 +28,8 @@ class DslParser(Parser):
                 for i in range(1, len(subquery)):
                     if subquery[:-i] in self.world_knowledge.COMMON_DSL_TOKENS:
                         jast_in_focus.command = subquery[:-i]
-                        jast_in_focus.arguments = self._process_arguments(
-                            subquery[-i + 1 :]
+                        self._process_arguments(
+                            jast=jast_in_focus, source_string=subquery[-i + 1 :]
                         )
                         break
             if len(query_sequence) > 0:
@@ -31,35 +37,70 @@ class DslParser(Parser):
                 jast_in_focus = jast_in_focus.children[0]
         return jast
 
-    def _process_arguments(self, source_string: str) -> Dict[str, int]:
-        matches = re.findall(
-            "([\w|\/]+|'[\w|\/|,|\s]+',|'[\w|\/|,|\s]+'|[<>=\-+]+)", source_string
-        )
-        result = {}
+    class ListBuffer:
+        def __init__(self) -> None:
+            self.buffer = []
 
-        group_tag = 0
+        def append(self, obj) -> None:
+            self.buffer.append(obj)
+
+        def flush(self) -> List:
+            to_return = deepcopy(self.buffer)
+            self.buffer = []
+            return to_return
+
+    def _process_arguments(
+        self, jast: DslJAST, source_string: str
+    ) -> List[str | List[str]]:
+
+        matches = re.findall(
+            "([\w|\/|.]+|'[\w|\/|,|\s|.]+',|'[\w|\/|,|\s|.]+'|[<>=\-+]+)", source_string
+        )
+
+        result = []
+        buffer = DslParser.ListBuffer()
+
         list_is_on = False
         operation_is_on = False
 
         for each in matches:
             if operation_is_on:
-                result[each] = group_tag
+                buffer.append(each)
+                result.append(buffer.flush())
                 operation_is_on = False
-                group_tag += 1
             elif re.match("[><=+\-]+", each):
-                group_tag -= 1
-                result[each] = group_tag
+                buffer.append(result.pop())
+                buffer.append(each)
                 operation_is_on = True
             elif each[-1] == ",":
-                if list_is_on:
-                    result[each] = group_tag
-                else:
-                    list_is_on = True
+                list_is_on = True
+                buffer.append(each[:-1])
             elif list_is_on:
-                result[each] = group_tag
+                buffer.append(each)
+                result.append(buffer.flush())
                 list_is_on = False
-                group_tag += 1
             else:
-                result[each] = group_tag
-                group_tag += 1
-        return result
+                result.append(each)
+
+        # To prepare the dsl string for rule generation, we replace each argument with random hash, and map hashes to arguments
+        dictionary = {}
+        for each in result:
+            h = uuid().hex
+            if isinstance(each, list):
+                starts_at = jast.dsl_string.find(each[0])
+                ends_at = jast.dsl_string.rfind(each[-1]) + len(each[-1])
+                jast.dsl_string = (
+                    jast.dsl_string[:starts_at] + h + jast.dsl_string[ends_at:]
+                )
+            else:
+                jast.dsl_string = jast.dsl_string.replace(each, h)
+            dictionary[h] = each
+
+        result_sanitized_from_quotes = {}
+        for k, v in dictionary.items():
+            if isinstance(v, list):
+                result_sanitized_from_quotes[k] = [sanitize_from_quotes(x) for x in v]
+            else:
+                result_sanitized_from_quotes[k] = sanitize_from_quotes(v)
+
+        jast.arguments = result_sanitized_from_quotes
