@@ -2,14 +2,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 import numpy as np
 import pandas as pd
-from jacques.jacques_member import JacquesMember
-from .jast_utils import extract_subtree_by_reference_as_reference_list
+from jacques.core.jacques_member import JacquesMember
+from ..ast.jacques_ast_utils import extract_subtree_by_reference_as_reference_list
 
 
 if TYPE_CHECKING:
-    from jacques.rule import Rule
+    from jacques.core.rule import Rule
     from typing import Dict, List, Tuple
-    from jacques.jast import CodeJAST, DslJAST
+    from jacques.ast.jacques_ast import CodeJAST, DslJAST
 
 
 class ExampleMatrix:

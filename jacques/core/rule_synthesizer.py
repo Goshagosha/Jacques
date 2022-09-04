@@ -1,55 +1,23 @@
 from __future__ import annotations
 import ast
-from typing import TYPE_CHECKING, Any
-from jacques.python_ast_utils import (
+from typing import TYPE_CHECKING
+from jacques.ast.python_ast_utils import (
     ArgumentData,
     ArgumentExtractor,
-    CustomUnparser,
     ListData,
     ListIndex,
     Lst,
     Arg,
 )
 from jacques.utils import id_generator, key_by_value, list_compare
-from jacques.jast_utils import *
-from jacques.jacques_member import JacquesMember
+from jacques.ast.jacques_ast_utils import *
+from jacques.core.jacques_member import JacquesMember
+from jacques.core.rule import Rule
 
 if TYPE_CHECKING:
     from typing import Dict, List, Tuple
-    from jacques.jast import CodeJAST, DslJAST
+    from jacques.ast.jacques_ast import CodeJAST, DslJAST
     from main import Jacques
-
-
-class Rule:
-    def __init__(
-        self,
-        dsl_source: str,
-        code_tree: ast.AST,
-        original_dsl_jast: DslJAST,
-        original_code_jast: CodeJAST,
-    ) -> None:
-        self.dsl_source = dsl_source
-        self.code_tree = code_tree
-        self.original_dsl_jast = original_dsl_jast
-        self.original_code_jast = original_code_jast
-        self.code_source = CustomUnparser().visit(self.code_tree)
-
-    def unset_unknowns(self) -> Rule:
-        new_dsl_source = self.dsl_source
-        for h, value in self.original_dsl_jast.arguments.items():
-            new_dsl_source = new_dsl_source.replace(h, value)
-        return Rule(
-            dsl_source=new_dsl_source,
-            code_tree=self.code_tree,
-            original_dsl_jast=self.original_dsl_jast,
-            original_code_jast=self.original_code_jast,
-        )
-
-    def __str__(self):
-        return f"{self.__class__}\n\t{self.dsl_source}\n\t{self.code_source}"
-
-    def __repr__(self) -> str:
-        return f"{self.__class__}({self.dsl_source}, {self.code_source})"
 
 
 class RuleSynthesizer(JacquesMember):
@@ -130,8 +98,17 @@ class RuleSynthesizer(JacquesMember):
         if not path:
             return placeholder
         attr_access = path[0]
-        if len(path) >= 2:
-            if isinstance(path[1], ListIndex) and attr_access != "elts":
+        if attr_access == "keywords":
+            index = path[1].index
+            assert ast_tree.keywords[index].arg == path[2]
+            upd = RuleSynthesizer._replace_in_path_with_placeholder(
+                ast_tree.keywords[index], path[3:], placeholder
+            )
+            ast_tree.keywords[index] = upd
+        elif attr_access == "elts":
+            return placeholder
+        elif len(path) >= 2:
+            if isinstance(path[1], ListIndex):
                 subtree_list = ast_tree.__getattribute__(attr_access)
                 if len(subtree_list) > 1:
                     raise NotImplementedError
@@ -140,10 +117,6 @@ class RuleSynthesizer(JacquesMember):
                     subtree, path[2:], placeholder
                 )
                 ast_tree.__setattr__(attr_access, [upd])
-        elif attr_access == "keywords":
-            raise NotImplementedError
-        elif attr_access == "elts":
-            return placeholder
         else:
             subtree = ast_tree.__getattribute__(attr_access)
             upd = RuleSynthesizer._replace_in_path_with_placeholder(

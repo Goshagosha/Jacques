@@ -1,9 +1,9 @@
 from argparse import ArgumentError
 import ast
 from typing import Any, TYPE_CHECKING
-from jacques.jast import *
+from jacques.ast.jacques_ast import *
 from copy import deepcopy
-from jacques.jacques_member import JacquesMember
+from jacques.core.jacques_member import JacquesMember
 
 
 ASSIGN_COMMAND_NAME = "assign"

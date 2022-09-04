@@ -1,9 +1,8 @@
 from copy import deepcopy
 import re
 from typing import Any
-from jacques.jast import *
-from jacques.jacques_member import JacquesMember
-from ..utils import sanitize_from_quotes
+from jacques.ast.jacques_ast import *
+from jacques.core.jacques_member import JacquesMember
 from uuid import uuid4 as uuid
 
 COMMAND_NOT_FOUND = "UNKNOWN"

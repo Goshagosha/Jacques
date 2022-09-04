@@ -1,7 +1,7 @@
 import ast
 from typing import List
-from jacques.jast import JAST, CodeJAST
-from jacques.python_ast_utils import Pipe
+from jacques.ast.jacques_ast import JAST, CodeJAST
+from jacques.ast.python_ast_utils import Pipe
 
 
 class SubtreeBuilder:

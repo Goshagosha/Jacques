@@ -5,7 +5,7 @@ import copy
 from platform import java_ver
 from typing import Dict, List, Tuple
 import graphviz
-from jacques.python_ast_utils import Lst, Arg
+from jacques.ast.python_ast_utils import Lst, Arg
 
 from jacques.utils import id_generator
 
