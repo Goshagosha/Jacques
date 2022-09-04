@@ -6,6 +6,7 @@ from jacques.python_ast_utils import (
     ArgumentExtractor,
     CustomUnparser,
     ListData,
+    ListIndex,
     Lst,
     Arg,
 )
@@ -22,108 +23,33 @@ if TYPE_CHECKING:
 class Rule:
     def __init__(
         self,
-        dsl_jast: DslJAST,
-        code_jast_list: List[CodeJAST],
-        more_samples: List[Tuple[DslJAST, CodeJAST]],
+        dsl_source: str,
+        code_tree: ast.AST,
+        original_dsl_jast: DslJAST,
+        original_code_jast: CodeJAST,
     ) -> None:
-        self.codejast_subtree = SubtreeBuilder().build(code_jast_list)
-        code_samples = [self.codejast_subtree]
-        dsl_samples = [dsl_jast]
+        self.dsl_source = dsl_source
+        self.code_tree = code_tree
+        self.original_dsl_jast = original_dsl_jast
+        self.original_code_jast = original_code_jast
+        self.code_source = CustomUnparser().visit(self.code_tree)
 
-        # filter out the main one we passed as a reference:
-        more_samples = [t for t in more_samples if t[0] != dsl_jast]
-        # isolate trees from other examples:
-        for dj, cj in more_samples:
-            for each in cj:
-                extracted = clone_matched(target=each, reference=self.codejast_subtree)
-                if extracted != None:
-                    code_samples.append(extracted)
-                    dsl_samples.append(dj)
-        # Convert codejasts to python asts
-        code_samples = [CodeExtractor().extract(cj) for cj in code_samples]
-        # Extract arguments from all the samples, and merge them into a single list:
-        all_samples_merged_arguments = {}
-        for sample in code_samples:
-            args_list = ArgumentExtractor().extract(sample)
-            each: ArgumentData
-            for each in args_list:
-                NO_PATH = "no_path"
-                key = NO_PATH if not each.path else str(each.path)
-                if key in all_samples_merged_arguments.keys():
-                    all_samples_merged_arguments[key] += each
-                else:
-                    all_samples_merged_arguments[key] = each
-        # Convert to list cause we don't need dict magic
-        all_samples_merged_arguments = list(all_samples_merged_arguments.values())
+    def unset_unknowns(self) -> Rule:
+        new_dsl_source = self.dsl_source
+        for h, value in self.original_dsl_jast.arguments.items():
+            new_dsl_source = new_dsl_source.replace(h, value)
+        return Rule(
+            dsl_source=new_dsl_source,
+            code_tree=self.code_tree,
+            original_dsl_jast=self.original_dsl_jast,
+            original_code_jast=self.original_code_jast,
+        )
 
-        arg_id_gen = id_generator()
-        list_id_gen = id_generator()
-        self.rule_code = code_samples[0]
-        self.rule_dsl_source = dsl_samples[0].dsl_string
-        each: ArgumentData
-        for each in all_samples_merged_arguments:
-            if isinstance(each, ArgumentData):
-                k = key_by_value(dsl_jast.arguments, each.values[0])
-                if k != None:
-                    placeholder = Arg(next(arg_id_gen), each.values)
-                    self.rule_dsl_source = self.rule_dsl_source.replace(
-                        k, str(placeholder)
-                    )
-                    # Navigate to the AST object to replace and replace it with the arg placeholder
-                    self.rule_code = Rule.replace_in_path_with_placeholder(
-                        self.rule_code, each.path, placeholder
-                    )
-            elif isinstance(each, ListData):
-                for hash, argument in dsl_jast.arguments.items():
-                    if isinstance(argument, list):
-                        if list_compare(argument, each.values[0]):
-                            placeholder = Lst(next(list_id_gen), each.values)
-                            self.rule_dsl_source = self.rule_dsl_source.replace(
-                                hash, str(placeholder)
-                            )
-                            self.rule_code = Rule.replace_in_path_with_placeholder(
-                                self.rule_code, each.path, placeholder
-                            )
-                            break
-                    else:
-                        if list_compare([argument], each.values[0]):
-                            placeholder = Lst(next(list_id_gen), each.values)
-                            self.rule_dsl_source = self.rule_dsl_source.replace(
-                                hash, str(placeholder)
-                            )
-                            self.rule_code = Rule.replace_in_path_with_placeholder(
-                                self.rule_code, each.path, placeholder
-                            )
-                            break
-        self.rule_code_source = CustomUnparser().visit(self.rule_code)
+    def __str__(self):
+        return f"{self.__class__}\n\t{self.dsl_source}\n\t{self.code_source}"
 
-    def replace_in_path_with_placeholder(
-        ast_tree: ast.AST, path: list, placeholder: Arg | Lst
-    ) -> ast.AST:
-        # If path is empty, we must be in the Name node with a load ctx:
-        if not path:
-            return placeholder
-        attr_access = path[0]
-        if attr_access == "args":
-            # Quick n dirty presumption that every function we see will only have one args[]
-            if len(ast_tree.args) > 1:
-                # Something failed about design logic if we got here
-                raise ValueError
-            subtree = ast_tree.args[0]
-            upd = Rule.replace_in_path_with_placeholder(subtree, path[2:], placeholder)
-            ast_tree.__setattr__(attr_access, [upd])
-        elif attr_access == "keywords":
-            raise NotImplementedError
-        elif attr_access == "elts":
-            if not isinstance(placeholder, Lst):
-                # Something failed about design logic if we got here
-                raise ValueError
-            return placeholder
-        else:
-            subtree = ast_tree.__getattribute__(attr_access)
-            upd = Rule.replace_in_path_with_placeholder(subtree, path[1:], placeholder)
-            ast_tree.__setattr__(attr_access, upd)
-        return ast_tree
+    def __repr__(self) -> str:
+        return f"{self.__class__}({self.dsl_source}, {self.code_source})"
 
 
 class RuleSynthesizer(JacquesMember):
@@ -142,6 +68,86 @@ class RuleSynthesizer(JacquesMember):
     def _from_match(
         self, dsl_jast: DslJAST, code_jast_list: List[CodeJAST]
     ) -> Tuple[str, Rule]:
-        dsl_command = dsl_jast.command
-        more_samples = self.jacques.jast_storage.get_samples(dsl_command)
-        return dsl_command, Rule(dsl_jast, code_jast_list, more_samples)
+
+        codejast_subtree = SubtreeBuilder().build(code_jast_list)
+        code_ast = CodeExtractor(self.jacques).extract(codejast_subtree)
+
+        ast_args_list = ArgumentExtractor().extract(code_ast)
+        arg_id_gen = id_generator()
+        list_id_gen = id_generator()
+        each: ArgumentData
+        for each in ast_args_list:
+            # For each argument in code we have 3 cases to tackle:
+            # 1. Singleton argument in DSL and Code
+            # 2. List argument in DSL (recognized) and List in Code
+            # 3. Singleton in DSL (did not recognize the list) and List in Code
+
+            if isinstance(each, ArgumentData):
+                hash = key_by_value(dsl_jast.mapping, each.values[0])
+                if hash != None:
+                    placeholder = Arg(arg_id_gen, each.values)
+                    dsl_jast.mapping[hash] = placeholder
+                    # Traverse the tree to the AST object to replace and replace it with the arg placeholder
+                    code_ast = RuleSynthesizer._replace_in_path_with_placeholder(
+                        code_ast, each.path, placeholder
+                    )
+            elif isinstance(each, ListData):
+                for hash, argument in dsl_jast.mapping.items():
+                    if isinstance(argument, list):
+                        if list_compare(
+                            argument, each.values[0], lambda_left=lambda x: x.pure()
+                        ):
+                            placeholder = Lst(list_id_gen, each.values)
+                            dsl_jast.mapping[hash] = placeholder
+                            code_ast = (
+                                RuleSynthesizer._replace_in_path_with_placeholder(
+                                    code_ast, each.path, placeholder
+                                )
+                            )
+                            break
+                    else:
+                        if list_compare([argument.pure()], each.values[0]):
+                            placeholder = Lst(list_id_gen, each.values)
+                            dsl_jast.mapping[hash] = placeholder
+                            code_ast = (
+                                RuleSynthesizer._replace_in_path_with_placeholder(
+                                    code_ast, each.path, placeholder
+                                )
+                            )
+                            break
+        dsl_source = dsl_jast.reconstruct()
+        return dsl_jast.command, Rule(
+            dsl_source=dsl_source,
+            code_tree=code_ast,
+            original_dsl_jast=dsl_jast,
+            original_code_jast=codejast_subtree,
+        )
+
+    def _replace_in_path_with_placeholder(
+        ast_tree: ast.AST, path: list, placeholder: Arg | Lst
+    ) -> ast.AST:
+        # If path is empty, we must be in the Name node with a load ctx:
+        if not path:
+            return placeholder
+        attr_access = path[0]
+        if len(path) >= 2:
+            if isinstance(path[1], ListIndex) and attr_access != "elts":
+                subtree_list = ast_tree.__getattribute__(attr_access)
+                if len(subtree_list) > 1:
+                    raise NotImplementedError
+                subtree = subtree_list[0]
+                upd = RuleSynthesizer._replace_in_path_with_placeholder(
+                    subtree, path[2:], placeholder
+                )
+                ast_tree.__setattr__(attr_access, [upd])
+        elif attr_access == "keywords":
+            raise NotImplementedError
+        elif attr_access == "elts":
+            return placeholder
+        else:
+            subtree = ast_tree.__getattribute__(attr_access)
+            upd = RuleSynthesizer._replace_in_path_with_placeholder(
+                subtree, path[1:], placeholder
+            )
+            ast_tree.__setattr__(attr_access, upd)
+        return ast_tree

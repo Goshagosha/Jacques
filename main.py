@@ -39,10 +39,6 @@ class Jacques:
         self.ruleset: Dict[str, Rule] = {}
         self.jast_storage: JastStorage = JastStorage()
 
-    def append_rules(self, new_rules) -> None:
-        self.ruleset.extend(new_rules)
-        self.ruleset = list(set(self.ruleset))
-
     def _rules_from_matches(self, matches) -> None:
         rules = self.rule_synthesizer.from_matches(matches)
         self.ruleset.update(rules)
@@ -82,10 +78,10 @@ class Jacques:
 
 j = Jacques(world_knowledge)
 
-py = "data = pd.DataFrame(other_df, columns=['Country/Region', 'Confirmed']).agg({'Confirmed' : 'min'}).rename(columns={'Confirmed' : 'Min confirmed'}).sort_values(['Min confirmed'], axis='index', ascending=[False]).info(verbose=False)"
-j.encountered_objects = ["data", "df1"]
-cj = j.python_parser.parse(py)
-
-
-j.push_examples_from_file("./test.py")
+j.encountered_objects = ["data"]
+dsl = "on data | select rows 'Active' > 200 | join right other_df on 'Active', 'Deaths' | group by 'Country/Region' | show"
+py = "print(data['Active' > 200].join(other_df, on=['Active', 'Deaths'], how='right').groupby(['Country/Region']))"
+j.push_example(dsl, py)
 j.process_all_examples()
+for k, v in j.ruleset.items():
+    print(v)

@@ -16,24 +16,22 @@ class PythonParser(JacquesMember):
         super().__init__(jacques)
 
     def parse(self, source_string: str) -> CodeJAST:
-        entry_tree = ast.parse(source_string).body[0]
+        entry_tree = ast.parse(source_string).body[0].value
         bootstrap_jast = JastBuilder(jacques=self.jacques).visit(entry_tree)
         bootstrap_jast.inverse_depth_rec()
-        if len(bootstrap_jast.children) == 0:
-            return bootstrap_jast
-        return bootstrap_jast.children[0]
+        return bootstrap_jast
 
 
+# TODO Change JastBuilder
 class JastBuilder(ast.NodeVisitor):
     def __init__(
         self,
         jast: CodeJAST = None,
         jacques=None,
     ) -> None:
-        if jacques is None:
-            raise ArgumentError
         self.jacques = jacques
         self.encountered_objects = jacques.encountered_objects
+        self.root_jast = None
         if jast == None:
             self.jast = CodeJAST()
             self.jast.depth = -1
@@ -42,14 +40,15 @@ class JastBuilder(ast.NodeVisitor):
         super().__init__()
 
     def visit(self, node: ast.AST) -> Any:
-        og_jast = self.jast
         super().visit(node)
-        return og_jast
+        return self.root_jast
 
     def make_child(self, code_ast):
         new_jast = CodeJAST()
         new_jast.depth = self.jast.depth + 1
         self.jast.add_child(new_jast)
+        if not self.root_jast:
+            self.root_jast = new_jast
         self.jast = new_jast
         self.jast.code_ast = code_ast
 

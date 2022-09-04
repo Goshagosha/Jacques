@@ -5,6 +5,7 @@ import copy
 from platform import java_ver
 from typing import Dict, List, Tuple
 import graphviz
+from jacques.python_ast_utils import Lst, Arg
 
 from jacques.utils import id_generator
 
@@ -124,4 +125,19 @@ class CodeJAST(JAST):
 class DslJAST(JAST):
     def __init__(self):
         self.dsl_string: str = None
+        self.deconstructed: list = None
+        self.mapping: Dict = None
         super().__init__()
+
+    def reconstruct(self):
+        result = []
+        for h in self.deconstructed:
+            arg = self.mapping[h]
+            if isinstance(arg, list):
+                result.append(", ".join([m.value for m in arg]))
+            else:
+                if isinstance(arg, (Lst, Arg)):
+                    result.append(str(arg))
+                else:
+                    result.append(arg.value)
+        return " ".join(result)

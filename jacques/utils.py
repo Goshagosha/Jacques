@@ -1,4 +1,4 @@
-from typing import Counter, List
+from typing import Callable, Counter, List
 from xmlrpc.client import Boolean
 import numpy as np
 
@@ -35,7 +35,16 @@ def sanitize_from_quotes(string: str) -> str:
     return string[1:-1] if is_in_quotes(string) else string
 
 
-def list_compare(list1: List, list2: List) -> bool:
+def list_compare(
+    list1: List,
+    list2: List,
+    lambda_left: Callable = None,
+    lambda_right: Callable = None,
+) -> bool:
+    if lambda_left:
+        list1 = list(map(lambda_left, list1))
+    if lambda_right:
+        list2 = list(map(lambda_right, list2))
     return Counter(list1) == Counter(list2)
 
 

@@ -38,7 +38,7 @@ class ExampleMatrix:
             # Only if that rule even is applicable to this matrix:
             if rule_name in [dj.command for dj in self.dsl_header]:
                 rule_used_codejasts = extract_subtree_by_reference_as_reference_list(
-                    self.code_header[0], rule.codejast_subtree
+                    self.code_header[0], rule.original_code_jast
                 )
                 for i, code_jast in enumerate(self.code_header):
                     if code_jast in rule_used_codejasts:

@@ -1,7 +1,12 @@
 import ast
 from typing import Any, Dict, List, Tuple
 
-LIST_INDEX = "list_index"
+from jacques.utils import id_generator
+
+
+class ListIndex:
+    def __init__(self, index):
+        self.index = index
 
 
 class Pipe(ast.AST):
@@ -99,11 +104,11 @@ class ArgumentExtractor(ast.NodeVisitor):
             return None
         for field, value in ast.iter_fields(node):
             if isinstance(value, list):
-                for item in value:
+                for i, item in enumerate(value):
                     if isinstance(item, ast.AST):
                         ArgumentExtractor(
                             arguments=self.arguments,
-                            path_in_ast=self.path_in_ast + [field, LIST_INDEX],
+                            path_in_ast=self.path_in_ast + [field, ListIndex(i)],
                         ).visit(item)
             elif isinstance(value, ast.AST):
                 ArgumentExtractor(
@@ -112,8 +117,8 @@ class ArgumentExtractor(ast.NodeVisitor):
 
 
 class Arg(ast.AST):
-    def __init__(self, index, examples) -> None:
-        self.index = index
+    def __init__(self, id_generator: id_generator, examples) -> None:
+        self.index = next(id_generator)
         self.examples = examples
 
     def __repr__(self) -> str:
@@ -121,8 +126,8 @@ class Arg(ast.AST):
 
 
 class Lst(ast.AST):
-    def __init__(self, index, examples) -> None:
-        self.index = index
+    def __init__(self, id_generator: id_generator, examples) -> None:
+        self.index = next(id_generator)
         self.examples = examples
 
     def __repr__(self) -> str:

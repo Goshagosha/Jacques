@@ -88,6 +88,10 @@ def extract_subtree_by_reference_as_reference_list(
 class CodeExtractor(ast.NodeTransformer):
     """Takes a CodeJAST subtree and extracts proper AST subtree"""
 
+    def __init__(self, jacques) -> None:
+        self.encountered_objects = jacques.encountered_objects
+        super().__init__()
+
     def extract(self, root_code_jast: CodeJAST) -> ast.AST:
         self.asts: List[ast.AST] = [jast.code_ast for jast in root_code_jast]
         return super().visit(root_code_jast.code_ast)
@@ -98,7 +102,7 @@ class CodeExtractor(ast.NodeTransformer):
         return self.generic_visit(node)
 
     def visit_Name(self, node: ast.Call):
-        if isinstance(node.ctx, ast.Load):
+        if isinstance(node.ctx, ast.Load) and (node.id in self.encountered_objects):
             return self.pipe(node)
         else:
             return self.generic_visit(node)
