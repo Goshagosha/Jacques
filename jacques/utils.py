@@ -22,16 +22,17 @@ def gaussian(x, mu=0, sig=1):
     return np.exp(-np.power(x - mu, 2.0) / (2 * np.power(sig, 2.0)))
 
 
-def is_in_quotes(string: str) -> bool:
-    if len(string) < 2:
-        return False
-    return (string.startswith("'") and string.endswith("'")) or (
-        string.startswith('"') and string.endswith('"')
-    )
-
-
-def sanitize_from_quotes(string: str) -> str:
-    return string[1:-1] if is_in_quotes(string) else string
+def sanitize(string: str) -> str:
+    try:
+        if string[0] == " ":
+            return sanitize(string[1:])
+        elif string[-1] == " ":
+            return sanitize(string[:-1])
+        elif string[-1] == "\n":
+            return sanitize(string[:-1])
+    except IndexError:
+        pass
+    return string
 
 
 def list_compare(
@@ -47,8 +48,11 @@ def list_compare(
     return Counter(list1) == Counter(list2)
 
 
-def key_by_value(dict, value):
-    try:
-        return list(dict.keys())[list(dict.values()).index(value)]
-    except ValueError:
-        return None
+def key_by_value(dict, value, compare_callback=None):
+    for key, val in dict.items():
+        if compare_callback:
+            if compare_callback(val, value):
+                return key
+        else:
+            if val == value:
+                return key

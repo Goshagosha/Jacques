@@ -2,8 +2,8 @@ from __future__ import annotations
 from typing import Dict, List, Tuple
 from jacques.ast.jacques_ast import CodeJAST, DslJAST
 from jacques.core.matcher import ExampleMatrix, Matcher
-from jacques.parser.dsl_parser import DslParser
-from jacques.parser.python_parser import PythonParser
+from jacques.parsers.dsl_parser import DslParser
+from jacques.parsers.python_parser import PythonParser
 from jacques.core.rule import Rule
 from jacques.core.rule_synthesizer import RuleSynthesizer
 

@@ -1,11 +1,12 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from ast import AST
-import copy
-from platform import java_ver
-from typing import Dict, List, Tuple
-import graphviz
-from jacques.ast.python_ast_utils import Lst, Arg
+from typing import Dict, List
+from jacques.ast.python_ast_utils import (
+    ComparePlaceholder,
+    ListPlaceholder,
+    ArgumentPlaceholder,
+)
 
 from jacques.utils import id_generator
 
@@ -18,32 +19,13 @@ class Visualizeable(ABC):
         ...
 
 
-class VisualizeableLeaf(Visualizeable):
-    def _visualize_recursive(self, graph) -> str:
-        id = next(self.id_generator)
-        name = f"{type(self).__name__}\n{str(self)}"
-        graph.node(id, label=name)
-        return id
-
-
-class VisualizeableTree(Visualizeable):
-    def _visualize_recursive(self, graph) -> str:
-        id = next(self.id_generator)
-        name = str(type(self).__name__)
-        graph.node(id, label=name)
-        for each in self.value:
-            graph.edge(id, each._visualize_recursive(graph))
-        return id
-
-
-class JAST(Visualizeable):
+class JAST:
     def __init__(self) -> None:
         self.command: str = None
         self.children: List[JAST] = []
         self.depth: int = None
         self.inverse_depth: int = None
         self.parent: JAST = None
-        self.arguments: Dict = {}
 
     def set_parent(self, parent: JAST):
         self.parent = parent
@@ -64,24 +46,24 @@ class JAST(Visualizeable):
             self.inverse_depth = max_in_child + 1
         return self.inverse_depth
 
-    def visualize(self, export_name) -> None:
-        graph = graphviz.Graph(name=export_name, format="png")
-        self._visualize_recursive(graph)
-        graph.render()
+    # def visualize(self, export_name) -> None:
+    #     graph = graphviz.Graph(name=export_name, format="png")
+    #     self._visualize_recursive(graph)
+    #     graph.render()
 
-    def _visualize_recursive(self, graph) -> str:
-        id = next(self.id_generator)
-        label = f"depth:{self.depth}; inv.depth:{self.inverse_depth}\n{self.command}"
-        graph.node(id, label=label, shape="diamond")
-        for child in self.children:
-            child_id = child._visualize_recursive(graph)
-            graph.edge(id, child_id)
-        for argument, path in self.arguments.items():
-            arg_id = next(self.id_generator)
-            label = f"{path}\n{argument}"
-            graph.node(arg_id, label=label)
-            graph.edge(id, arg_id)
-        return id
+    # def _visualize_recursive(self, graph) -> str:
+    #     id = next(self.id_generator)
+    #     label = f"depth:{self.depth}; inv.depth:{self.inverse_depth}\n{self.command}"
+    #     graph.node(id, label=label, shape="diamond")
+    #     for child in self.children:
+    #         child_id = child._visualize_recursive(graph)
+    #         graph.edge(id, child_id)
+    #     for argument, path in self.arguments.items():
+    #         arg_id = next(self.id_generator)
+    #         label = f"{path}\n{argument}"
+    #         graph.node(arg_id, label=label)
+    #         graph.edge(id, arg_id)
+    #     return id
 
     def __contains__(self, other_ast) -> bool:
         other_command = other_ast.command
@@ -92,16 +74,7 @@ class JAST(Visualizeable):
                 return True
         return False
 
-    def __sub__(self, other_ast) -> JAST:
-        j = copy.deepcopy(self)
-        raise NotImplementedError
-
     def __iter__(self):
-        """Recursive iterator
-
-        Yields:
-            _type_: _description_
-        """
         yield self
         for child in self.children:
             for node in child:
@@ -136,7 +109,9 @@ class DslJAST(JAST):
             if isinstance(arg, list):
                 result.append(", ".join([m.value for m in arg]))
             else:
-                if isinstance(arg, (Lst, Arg)):
+                if isinstance(
+                    arg, (ListPlaceholder, ArgumentPlaceholder, ComparePlaceholder)
+                ):
                     result.append(str(arg))
                 else:
                     result.append(arg.value)
