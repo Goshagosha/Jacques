@@ -31,60 +31,27 @@ class Pipe(ast.AST):
 
 
 class ArgumentData:
-    def __init__(self, path: List[str], examples: List, values: List) -> None:
+    def __init__(self, path: List[str], value: Any) -> None:
         self.path = path
-        self.examples = examples
-        self.values = values
-
-    def __add__(self, other):
-        if str(self.path) != str(other.path):
-            raise ValueError(
-                "Can not add ArgumentData objects with different paths in parent"
-            )
-        else:
-            new = ArgumentData(self.path, self.examples, self.values)
-            new.examples.extend(other.examples)
-            new.values.extend(other.values)
-            return new
-
-    def __iadd__(self, other):
-        return self.__add__(other)
+        self.value = str(value)
 
 
 # TODO
 class CompareData:
-    def __init__(
-        self, path: List[str], examples: List, left, comparator, right
-    ) -> None:
+    def __init__(self, path: List[str], left, comparator, right) -> None:
         self.path = path
-        self.examples = examples
-        self.lefts = [left]
-        self.comparators = [comparator]
-        self.rights = [right]
+        self.left = str(left)
+        self.comparator = str(comparator)
+        self.right = str(right)
 
-    def values(self, index):
-        return [self.lefts[index], self.comparators[index], self.rights[index]]
+    def value(self):
+        return f"{self.left} {self.comparator} {self.right}"
 
 
 class ListData:
-    def __init__(self, path: List[str], examples: List, values: List) -> None:
+    def __init__(self, path: List[str], value: List) -> None:
         self.path = path
-        self.examples = examples
-        self.values = values
-
-    def __add__(self, other):
-        if str(self.path) != str(other.path):
-            raise ValueError(
-                "Can not add ArgumentData objects with different paths in parent"
-            )
-        else:
-            new = ListData(self.path, self.examples, self.values)
-            new.examples.extend(other.examples)
-            new.values.extend(other.values)
-            return new
-
-    def __iadd__(self, other):
-        return self.__add__(other)
+        self.value = value
 
 
 class ArgumentExtractor(ast.NodeVisitor):
@@ -101,23 +68,23 @@ class ArgumentExtractor(ast.NodeVisitor):
         super().visit(node)
         return self.arguments
 
-    def _add_argument(self, ast, value):
-        arg = ArgumentData(self.path_in_ast, [ast], values=[value])
+    def _add_argument(self, value):
+        arg = ArgumentData(self.path_in_ast, value)
         self.arguments.append(arg)
 
-    def _add_list(self, ast, value):
-        arg = ListData(self.path_in_ast, [ast], values=[value])
+    def _add_list(self, value):
+        arg = ListData(self.path_in_ast, value)
         self.arguments.append(arg)
 
-    def _add_comparator(self, ast, left, comparator, right):
-        arg = CompareData(self.path_in_ast, [ast], left, comparator, right)
+    def _add_comparator(self, left, comparator, right):
+        arg = CompareData(self.path_in_ast, left, comparator, right)
         self.arguments.append(arg)
 
     def visit_Constant(self, node: ast.Constant) -> Any:
-        self._add_argument(node, node.value)
+        self._add_argument(node.value)
 
     def visit_Name(self, node: ast.Name) -> Any:
-        self._add_argument(node, node.id)
+        self._add_argument(node.id)
 
     def visit_keyword(self, node: ast.keyword) -> Any:
         ArgumentExtractor(
@@ -131,13 +98,11 @@ class ArgumentExtractor(ast.NodeVisitor):
                 l.append(each.value)
             else:
                 raise NotImplementedError
-        self._add_list(node, l)
+        self._add_list(l)
 
     def visit_Compare(self, node: ast.Compare) -> Any:
         operation = unparse_comparator(node.ops[0])
-        self._add_comparator(
-            node, node.left.value, operation, node.comparators[0].value
-        )
+        self._add_comparator(node.left.value, operation, node.comparators[0].value)
 
     def generic_visit(self, node):
         """Called if no explicit visitor function exists for a node."""

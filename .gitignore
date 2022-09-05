@@ -5,3 +5,4 @@ test.py
 *.gv
 *.gv.png
 __pycache__
+.VSCodeCounter

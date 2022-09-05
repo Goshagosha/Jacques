@@ -51,8 +51,11 @@ def list_compare(
 def key_by_value(dict, value, compare_callback=None):
     for key, val in dict.items():
         if compare_callback:
-            if compare_callback(val, value):
-                return key
+            try:
+                if compare_callback(val, value):
+                    return key
+            except AttributeError:
+                pass
         else:
             if val == value:
                 return key

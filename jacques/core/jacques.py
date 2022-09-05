@@ -48,6 +48,8 @@ class Jacques:
             finished = True
             example_matrix: ExampleMatrix
             for example_matrix in self.matcher.examples:
+                for rule in self.ruleset.values():
+                    example_matrix.apply_rule(rule)
                 matches = example_matrix.matches()
                 self._rules_from_matches(matches)
                 anything_else_dumped = (

@@ -32,17 +32,15 @@ class ExampleMatrix:
                 ):
                     self.m[i, j] = 1
 
-    def update_with_rules(self, ruleset: Dict[str, Rule]) -> None:
-        rule: Rule
-        for rule_name, rule in ruleset.items():
-            # Only if that rule even is applicable to this matrix:
-            if rule_name in [dj.command for dj in self.dsl_header]:
-                rule_used_codejasts = extract_subtree_by_reference_as_reference_list(
-                    self.code_header[0], rule.original_code_jast
-                )
-                for i, code_jast in enumerate(self.code_header):
-                    if code_jast in rule_used_codejasts:
-                        self.m[:, i] = 0
+    def apply_rule(self, rule: Rule) -> None:
+        row = np.where(
+            np.array([d.command for d in self.dsl_header])
+            == rule.original_dsl_jast.command
+        )[0]
+        possible_code_jast_names = [c.command for c in rule.original_code_jast]
+        for i, command in enumerate([c.command for c in self.code_header]):
+            if command not in possible_code_jast_names:
+                self.m[row, i] = 0
 
     def exhausted(self):
         return self.m.sum() == 0
@@ -98,7 +96,8 @@ class Matcher(JacquesMember):
     def _update_with_rules_and_dump_exhausted(self) -> bool:
         dumped = False
         for example_matrix in self.examples:
-            example_matrix.update_with_rules(self.jacques.ruleset)
+            for rule in self.jacques.ruleset.values():
+                example_matrix.apply_rule(rule)
         updated_examples = []
         for example_matrix in self.examples:
             if example_matrix.exhausted():

@@ -2,11 +2,6 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from ast import AST
 from typing import Dict, List
-from jacques.ast.python_ast_utils import (
-    ComparePlaceholder,
-    ListPlaceholder,
-    ArgumentPlaceholder,
-)
 
 from jacques.utils import id_generator
 
@@ -106,13 +101,5 @@ class DslJAST(JAST):
         result = []
         for h in self.deconstructed:
             arg = self.mapping[h]
-            if isinstance(arg, list):
-                result.append(", ".join([m.value for m in arg]))
-            else:
-                if isinstance(
-                    arg, (ListPlaceholder, ArgumentPlaceholder, ComparePlaceholder)
-                ):
-                    result.append(str(arg))
-                else:
-                    result.append(arg.value)
+            result.append(str(arg))
         return " ".join(result)

@@ -2,6 +2,7 @@ from copy import deepcopy
 import re
 from typing import Any, Tuple
 from jacques.ast.jacques_ast import *
+from jacques.ast.python_ast_utils import ArgumentData, CompareData, ListData
 from jacques.core.jacques_member import JacquesMember
 from uuid import uuid4 as uuid
 
@@ -19,6 +20,10 @@ class DslArgument(ABC):
     def relaxed_equal(self, other: Any) -> bool:
         ...
 
+    @abstractmethod
+    def __str__(self) -> str:
+        ...
+
 
 class DslArgumentSingle(DslArgument):
     def is_in_quotes(self) -> bool:
@@ -34,42 +39,53 @@ class DslArgumentSingle(DslArgument):
         else:
             return self.value
 
-    def relaxed_equal(self, other: Any) -> bool:
-        if isinstance(other, int):
-            other = str(other)
-        return self.value == other or self.pure() == other
+    def relaxed_equal(self, other: ListData | ArgumentData) -> bool:
+        if isinstance(other, ListData):
+            return [self.value] == other.value or [self.pure()] == other.value
+        elif isinstance(other, ArgumentData):
+            return self.value == other.value or self.pure() == other.value
+        elif isinstance(other, str):
+            return self.value == other or self.pure() == other
+        else:
+            return False
+
+    def __str__(self) -> str:
+        return str(self.value)
 
 
 class DslArgumentList(DslArgument):
-    def relaxed_equal(self, other: List) -> bool:
-        if not isinstance(other, list):
-            raise ValueError("Cannot compare DslArgumentList instance to non-list")
-        if len(self.value) != len(other):
+    def relaxed_equal(self, other: ListData) -> bool:
+        if not isinstance(other, ListData):
+            return False
+        if len(self.value) != len(other.value):
             return False
         match = True
         for i in range(len(self.value)):
-            match = match and self.value[i].relaxed_equal(other[i])
+            match = match and self.value[i].relaxed_equal(other.value[i])
         return match
+
+    def __str__(self) -> str:
+        return " ,".join([str(x) for x in self.value])
 
 
 class DslArgumentCompare(DslArgument):
-    def relaxed_equal(self, other: Any) -> bool:
-        if len(other) != 3:
+    def __init__(self, left, comparator, right, index_in_parent) -> None:
+        self.index_in_parent = index_in_parent
+        self.left = left
+        self.comparator = comparator
+        self.right = right
+
+    def relaxed_equal(self, other: CompareData) -> bool:
+        if not isinstance(other, CompareData):
             return False
         return (
-            self.left().relaxed_equal(other[0])
-            and self.comparator().relaxed_equal(other[1])
-            and self.right().relaxed_equal(other[2])
+            self.left.relaxed_equal(other.left)
+            and self.comparator.relaxed_equal(other.comparator)
+            and self.right.relaxed_equal(other.right)
         )
 
-    def left(self):
-        return self.value[0]
-
-    def comparator(self):
-        return self.value[1]
-
-    def right(self):
-        return self.value[2]
+    def __str__(self) -> str:
+        return f"{self.left} {self.comparator} {self.right}"
 
 
 class _ListBuffer:
@@ -127,7 +143,8 @@ class DslParser(JacquesMember):
         for each in split:
             if operation_is_on:
                 buffer.append(each)
-                result.append(DslArgumentCompare(buffer.flush(), len(result)))
+                l, c, r = buffer.flush()
+                result.append(DslArgumentCompare(l, c, r, len(result)))
                 operation_is_on = False
             elif re.match("[><+\-]+|[><=+\-]\{2\}", each):
                 buffer.append(result.pop().value)

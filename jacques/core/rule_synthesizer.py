@@ -46,49 +46,24 @@ class RuleSynthesizer(JacquesMember):
         ast_args_list = ArgumentExtractor().extract(code_ast)
         arg_id_gen = id_generator()
         list_id_gen = id_generator()
-        ast_arg: ArgumentData
+        compare_id_gen = id_generator()
+        ast_arg: ArgumentData | ListData | CompareData
         for ast_arg in ast_args_list:
-            # For each argument in code we have 3 cases to tackle:
-            # 1. Singleton argument in Code and DSL
-            # 2. List in Code, Singleton in DSL (did not recognize the list)
-            # 3. List in Code and List in DSL
-
-            if isinstance(ast_arg, ArgumentData):
-                hash = key_by_value(
-                    dsl_jast.mapping, ast_arg.values[0], lambda x, y: x.relaxed_equal(y)
+            hash = key_by_value(
+                dsl_jast.mapping, ast_arg, lambda x, y: x.relaxed_equal(y)
+            )
+            if hash != None:
+                if isinstance(ast_arg, ArgumentData):
+                    placeholder = ArgumentPlaceholder(arg_id_gen, ast_arg.value)
+                if isinstance(ast_arg, ListData):
+                    placeholder = ListPlaceholder(list_id_gen, ast_arg.value)
+                if isinstance(ast_arg, CompareData):
+                    placeholder = ComparePlaceholder(compare_id_gen, ast_arg.value())
+                dsl_jast.mapping[hash] = placeholder
+                # Traverse the tree to the AST object to replace and replace it with the arg placeholder
+                code_ast = RuleSynthesizer._replace_in_path_with_placeholder(
+                    code_ast, ast_arg.path, placeholder
                 )
-                if hash != None:
-                    placeholder = ArgumentPlaceholder(arg_id_gen, ast_arg.values)
-                    dsl_jast.mapping[hash] = placeholder
-                    # Traverse the tree to the AST object to replace and replace it with the arg placeholder
-                    code_ast = RuleSynthesizer._replace_in_path_with_placeholder(
-                        code_ast, ast_arg.path, placeholder
-                    )
-            elif isinstance(ast_arg, ListData):
-                for hash, dsl_arg in dsl_jast.mapping.items():
-                    if (
-                        isinstance(dsl_arg, DslArgumentList)
-                        and dsl_arg.relaxed_equal(ast_arg.values[0])
-                    ) or (
-                        isinstance(dsl_arg, DslArgumentSingle)
-                        and dsl_arg.relaxed_equal(ast_arg.values[0][0])
-                    ):
-                        placeholder = ListPlaceholder(list_id_gen, ast_arg.values)
-                        dsl_jast.mapping[hash] = placeholder
-                        code_ast = RuleSynthesizer._replace_in_path_with_placeholder(
-                            code_ast, ast_arg.path, placeholder
-                        )
-                        break
-            elif isinstance(ast_arg, CompareData):
-                hash = key_by_value(
-                    dsl_jast.mapping, ast_arg.values(0), lambda x, y: x.relaxed_equal(y)
-                )
-                if hash != None:
-                    placeholder = ComparePlaceholder(arg_id_gen, ast_arg.values)
-                    dsl_jast.mapping[hash] = placeholder
-                    code_ast = RuleSynthesizer._replace_in_path_with_placeholder(
-                        code_ast, ast_arg.path, placeholder
-                    )
 
         dsl_source = dsl_jast.reconstruct()
         return dsl_jast.command, Rule(
