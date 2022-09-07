@@ -146,7 +146,7 @@ class DslParser(JacquesMember):
                 l, c, r = buffer.flush()
                 result.append(DslArgumentCompare(l, c, r, len(result)))
                 operation_is_on = False
-            elif re.match("[><+\-]+|[><=+\-]\{2\}", each):
+            elif re.match("[><]+|[><=]\{2\}", each):
                 buffer.append(result.pop().value)
                 buffer.append(each)
                 operation_is_on = True

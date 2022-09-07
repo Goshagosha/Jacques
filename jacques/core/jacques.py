@@ -1,14 +1,17 @@
 from __future__ import annotations
 from typing import Dict, List, Tuple
 from jacques.ast.jacques_ast import CodeJAST, DslJAST
-from jacques.core.matcher import ExampleMatrix, Matcher
 from jacques.parsers.dsl_parser import DslParser
 from jacques.parsers.python_parser import PythonParser
 from jacques.core.rule import Rule
 from jacques.core.rule_synthesizer import RuleSynthesizer
+from jacques.core.example import Example, ExampleMatrix
+from nldsl import CodeGenerator, grammar
 
 
 class JastStorage:
+    """NEVER USED"""
+
     def __init__(self) -> None:
         self.code_jasts: List[CodeJAST] = []
         self.dsl_jasts: List[List[DslJAST]] = []
@@ -31,37 +34,42 @@ class Jacques:
         self.world_knowledge = world_knowledge
         self.encountered_objects: List[str] = []
 
+        self.code_generator = CodeGenerator()
+        self.examples = []
         self.dsl_parser = DslParser(jacques=self)
         self.python_parser = PythonParser(jacques=self)
-        self.matcher = Matcher(jacques=self)
         self.rule_synthesizer = RuleSynthesizer(jacques=self)
         self.ruleset: Dict[str, Rule] = {}
-        self.jast_storage: JastStorage = JastStorage()
+        self.context = {"grammar": grammar}
 
     def _rules_from_matches(self, matches) -> None:
         rules = self.rule_synthesizer.from_matches(matches)
+        for name, rule in rules.items():
+            dsl_grammar = rule.original_dsl_jast.reconstruct_to_nldsl()
+            f = rule.generate_function(name, dsl_grammar)
+            exec(f, self.context)
+            function = self.context[name]
+            self.code_generator.register_function(function, name)
+
+        dsl = "## on data | show"
+        c = self.code_generator(dsl)
         self.ruleset.update(rules)
 
     def process_all_examples(self):
         finished = False
         while not finished:
             finished = True
-            example_matrix: ExampleMatrix
-            for example_matrix in self.matcher.examples:
+            for example in self.examples:
                 for rule in self.ruleset.values():
-                    example_matrix.apply_rule(rule)
-                matches = example_matrix.matches()
+                    example.apply_rule(rule)
+                matrix = example.to_matrix()
+                matches = matrix.matches()
                 self._rules_from_matches(matches)
-                anything_else_dumped = (
-                    self.matcher._update_with_rules_and_dump_exhausted()
-                )
+                anything_else_dumped = False  # Check if any matrices were updated
                 finished = finished and not anything_else_dumped
 
     def push_example(self, dsl_string, code_string) -> None:
-        dsl_tree = self.dsl_parser.parse(dsl_string)
-        code_tree = self.python_parser.parse(code_string)
-        self.jast_storage.push(dsl_tree, code_tree)
-        self.matcher.push_example(dsl_tree, code_tree)
+        self.examples.append(Example(self, dsl_string, code_string))
 
     def push_examples_from_file(self, path: str) -> None:
         dsl = None

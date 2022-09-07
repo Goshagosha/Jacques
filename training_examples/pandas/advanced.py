@@ -16,7 +16,8 @@ data['Confirmed' > 100].sort_values(['Confirmed'], axis='index', ascending=[True
 
 # join & replace_values & append_column & apply sum
 ## on data | join left other_df on 'Confirmed' | append column 'Confirmed' - 'Deaths' as 'Active' | apply sum on 'Active' as 'Total Active' 
-data.join(other_df, on=['Confirmed'], how='left').assign(**{'Active': data.join(other_df, on=['Confirmed'], how='left').apply(lambda row: 'Confirmed' - 'Deaths', axis=1).values}).agg({'Active' : 'sum'}).rename(columns={'Active' : 'Total Active'}) 
+data.join(other_df, on=['Confirmed'], how='left').assign(**{'Active': data.join(other_df, on=['Confirmed'], how='left').apply(lambda row: 'Confirmed' - 'Deaths', axis=0).values}).agg({'Active' : 'sum'}).rename(columns={'Active' : 'Total Active'}) 
+
 
 # intersection & difference & replace_values & show
 ## on data | intersection other_df | difference other_df | replace 0 with 'Unknown' | show 

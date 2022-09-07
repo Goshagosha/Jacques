@@ -3,13 +3,28 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pandas as pd
 from jacques.core.jacques_member import JacquesMember
-from ..ast.jacques_ast_utils import extract_subtree_by_reference_as_reference_list
+from jacques.core.rule import Rule
 
 
 if TYPE_CHECKING:
-    from jacques.core.rule import Rule
     from typing import Dict, List, Tuple
     from jacques.ast.jacques_ast import CodeJAST, DslJAST
+
+
+class Example(JacquesMember):
+    def __init__(self, jacques, dsl_source: str, code_source: str) -> None:
+        self.dsl_source = dsl_source
+        self.code_source = code_source
+        super().__init__(jacques)
+
+    def apply_rule(self, rule: Rule) -> None:
+        self.dsl_source = rule.scrap_dsl(self.dsl_source)
+        self.code_source = rule.scrap_code(self.code_source)
+
+    def to_matrix(self) -> ExampleMatrix:
+        dsl_jast = self.jacques.dsl_parser.parse(self.dsl_source)
+        code_jast = self.jacques.python_parser.parse(self.code_source)
+        return ExampleMatrix(list(dsl_jast), list(code_jast))
 
 
 class ExampleMatrix:
@@ -31,16 +46,6 @@ class ExampleMatrix:
                     and code_header[j].inverse_depth + i >= y - 1
                 ):
                     self.m[i, j] = 1
-
-    def apply_rule(self, rule: Rule) -> None:
-        row = np.where(
-            np.array([d.command for d in self.dsl_header])
-            == rule.original_dsl_jast.command
-        )[0]
-        possible_code_jast_names = [c.command for c in rule.original_code_jast]
-        for i, command in enumerate([c.command for c in self.code_header]):
-            if command not in possible_code_jast_names:
-                self.m[row, i] = 0
 
     def exhausted(self):
         return self.m.sum() == 0
@@ -79,30 +84,3 @@ class ExampleMatrix:
             code_jasts = [self.code_header[j] for j in js]
             result.append((dsl_jast, code_jasts))
         return result
-
-
-class Matcher(JacquesMember):
-    def __init__(self, jacques):
-        self.examples = []
-        super().__init__(jacques)
-
-    def push_example(self, dsl_jast: DslJAST, code_jast: CodeJAST) -> None:
-        dsl_header = list(dsl_jast)
-        code_header = list(code_jast)
-
-        m = ExampleMatrix(dsl_header, code_header)
-        self.examples.append(m)
-
-    def _update_with_rules_and_dump_exhausted(self) -> bool:
-        dumped = False
-        for example_matrix in self.examples:
-            for rule in self.jacques.ruleset.values():
-                example_matrix.apply_rule(rule)
-        updated_examples = []
-        for example_matrix in self.examples:
-            if example_matrix.exhausted():
-                dumped = True
-            else:
-                updated_examples.append(example_matrix)
-        self.examples = updated_examples
-        return dumped

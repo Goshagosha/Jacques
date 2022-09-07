@@ -29,6 +29,12 @@ class Pipe(ast.AST):
     def __init__(self, placeholding_for: ast.Call | ast.Subscript) -> None:
         self.placeholding_for = placeholding_for
 
+    def __str__(self) -> str:
+        return "<PIPE>"
+
+    def to_arg(self) -> str:
+        return f"{{pipe}}"
+
 
 class ArgumentData:
     def __init__(self, path: List[str], value: Any) -> None:
@@ -127,6 +133,12 @@ class ArgumentPlaceholder(ast.AST):
         self.index = next(id_generator)
         self.examples = examples
 
+    def to_arg(self) -> str:
+        return f'{{args["arg{str(self.index)}"]}}'
+
+    def to_dsl_arg(self) -> str:
+        return f"$arg{self.index}"
+
     def __repr__(self) -> str:
         return f"<ARG{self.index}>"
 
@@ -136,6 +148,12 @@ class ListPlaceholder(ast.AST):
         self.index = next(id_generator)
         self.examples = examples
 
+    def to_arg(self) -> str:
+        return f'{{args["lst{str(self.index)}"]}}'
+
+    def to_dsl_arg(self) -> str:
+        return f"$lst{str(self.index)}"
+
     def __repr__(self) -> str:
         return f"<LST{self.index}>"
 
@@ -144,6 +162,12 @@ class ComparePlaceholder(ast.AST):
     def __init__(self, id_generator: id_generator, examples) -> None:
         self.index = next(id_generator)
         self.examples = examples
+
+    def to_arg(self) -> str:
+        return f'{{args["cmp{str(self.index)}"]}}'
+
+    def to_dsl_arg(self) -> str:
+        return f"$cmp{str(self.index)}"
 
     def __repr__(self) -> str:
         return f"<CMP{self.index}>"
@@ -157,5 +181,18 @@ class CustomUnparser(ast._Unparser):
             self._source.append(str(node))
         elif isinstance(node, ListPlaceholder):
             self._source.append(f"[{str(node)}]")
+        else:
+            return super().generic_visit(node)
+
+
+class ToFunctionUnparser(ast._Unparser):
+    def to_function(self, node: ast.AST) -> str:
+        return f"{self.visit(node)}"
+
+    def generic_visit(self, node):
+        if isinstance(
+            node, (ArgumentPlaceholder, ComparePlaceholder, Pipe, ListPlaceholder)
+        ):
+            self._source.append(node.to_arg())
         else:
             return super().generic_visit(node)

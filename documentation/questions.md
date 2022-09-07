@@ -7,7 +7,7 @@ py = 'data["SNo" > 100 & "SNo" < 200]'
 # Correct:
 py = 'data[("SNo" > 100) & ("SNo" < 200)]'
 ```
-- Actually both are wrong
+- Actually both are wrong - should i try "csv with header"?
 
 - NLDSL: linear DSL + non-linear Code
 - Too specific?

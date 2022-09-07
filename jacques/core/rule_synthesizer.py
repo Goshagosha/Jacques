@@ -15,7 +15,6 @@ from jacques.utils import id_generator, key_by_value
 from jacques.ast.jacques_ast_utils import *
 from jacques.core.jacques_member import JacquesMember
 from jacques.core.rule import Rule
-from jacques.parsers.dsl_parser import DslArgumentList, DslArgumentSingle
 
 if TYPE_CHECKING:
     from typing import Dict, List, Tuple
