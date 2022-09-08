@@ -1,11 +1,10 @@
 import ast
 from typing import Any, Dict, List, Tuple
-
-from jacques.utils import id_generator
+from jacques.core.arguments import _Argument, Listleton, Operaton, Pipe, Singleton
 
 
 def unparse_comparator(comparator: ast.cmpop) -> str:
-    cmpops = {
+    CMPOPS = {
         "Eq": "==",
         "NotEq": "!=",
         "Lt": "<",
@@ -17,47 +16,12 @@ def unparse_comparator(comparator: ast.cmpop) -> str:
         "In": "in",
         "NotIn": "not in",
     }
-    return cmpops[comparator.__class__.__name__]
+    return CMPOPS[comparator.__class__.__name__]
 
 
 class ListIndex:
     def __init__(self, index):
         self.index = index
-
-
-class Pipe(ast.AST):
-    def __init__(self, placeholding_for: ast.Call | ast.Subscript) -> None:
-        self.placeholding_for = placeholding_for
-
-    def __str__(self) -> str:
-        return "<PIPE>"
-
-    def to_arg(self) -> str:
-        return f"{{pipe}}"
-
-
-class ArgumentData:
-    def __init__(self, path: List[str], value: Any) -> None:
-        self.path = path
-        self.value = str(value)
-
-
-# TODO
-class CompareData:
-    def __init__(self, path: List[str], left, comparator, right) -> None:
-        self.path = path
-        self.left = str(left)
-        self.comparator = str(comparator)
-        self.right = str(right)
-
-    def value(self):
-        return f"{self.left} {self.comparator} {self.right}"
-
-
-class ListData:
-    def __init__(self, path: List[str], value: List) -> None:
-        self.path = path
-        self.value = value
 
 
 class ArgumentExtractor(ast.NodeVisitor):
@@ -67,23 +31,24 @@ class ArgumentExtractor(ast.NodeVisitor):
         if path_in_ast is None:
             path_in_ast = []
         self.path_in_ast = path_in_ast
-        self.arguments: List[ArgumentData | ListData] = arguments
+        self.arguments: List[Singleton.Code | Listleton.Code] = arguments
         super().__init__()
 
-    def extract(self, node: ast.AST) -> List[ArgumentData]:
+    def extract(self, node: ast.AST) -> List[_Argument]:
         super().visit(node)
         return self.arguments
 
     def _add_argument(self, value):
-        arg = ArgumentData(self.path_in_ast, value)
+        arg = Singleton.Code(self.path_in_ast, value)
         self.arguments.append(arg)
 
     def _add_list(self, value):
-        arg = ListData(self.path_in_ast, value)
+        arg = Listleton.Code(self.path_in_ast, value)
         self.arguments.append(arg)
 
     def _add_comparator(self, left, comparator, right):
-        arg = CompareData(self.path_in_ast, left, comparator, right)
+        operation = unparse_comparator(comparator)
+        arg = Operaton.Code(self.path_in_ast, str(left), operation, str(right))
         self.arguments.append(arg)
 
     def visit_Constant(self, node: ast.Constant) -> Any:
@@ -107,8 +72,7 @@ class ArgumentExtractor(ast.NodeVisitor):
         self._add_list(l)
 
     def visit_Compare(self, node: ast.Compare) -> Any:
-        operation = unparse_comparator(node.ops[0])
-        self._add_comparator(node.left.value, operation, node.comparators[0].value)
+        self._add_comparator(node.left.value, node.ops[0], node.comparators[0].value)
 
     def generic_visit(self, node):
         """Called if no explicit visitor function exists for a node."""
@@ -128,59 +92,10 @@ class ArgumentExtractor(ast.NodeVisitor):
                 ).visit(value)
 
 
-class ArgumentPlaceholder(ast.AST):
-    def __init__(self, id_generator: id_generator, examples) -> None:
-        self.index = next(id_generator)
-        self.examples = examples
-
-    def to_arg(self) -> str:
-        return f'{{args["arg{str(self.index)}"]}}'
-
-    def to_dsl_arg(self) -> str:
-        return f"$arg{self.index}"
-
-    def __repr__(self) -> str:
-        return f"<ARG{self.index}>"
-
-
-class ListPlaceholder(ast.AST):
-    def __init__(self, id_generator: id_generator, examples) -> None:
-        self.index = next(id_generator)
-        self.examples = examples
-
-    def to_arg(self) -> str:
-        return f'{{args["lst{str(self.index)}"]}}'
-
-    def to_dsl_arg(self) -> str:
-        return f"$lst{str(self.index)}"
-
-    def __repr__(self) -> str:
-        return f"<LST{self.index}>"
-
-
-class ComparePlaceholder(ast.AST):
-    def __init__(self, id_generator: id_generator, examples) -> None:
-        self.index = next(id_generator)
-        self.examples = examples
-
-    def to_arg(self) -> str:
-        return f'{{args["cmp{str(self.index)}"]}}'
-
-    def to_dsl_arg(self) -> str:
-        return f"$cmp{str(self.index)}"
-
-    def __repr__(self) -> str:
-        return f"<CMP{self.index}>"
-
-
 class CustomUnparser(ast._Unparser):
     def generic_visit(self, node):
-        if isinstance(node, Pipe):
-            self._source.append("<PIPE>")
-        elif isinstance(node, (ArgumentPlaceholder, ComparePlaceholder)):
+        if isinstance(node, (Pipe, _Argument.Placeholder)):
             self._source.append(str(node))
-        elif isinstance(node, ListPlaceholder):
-            self._source.append(f"[{str(node)}]")
         else:
             return super().generic_visit(node)
 
@@ -190,9 +105,7 @@ class ToFunctionUnparser(ast._Unparser):
         return f"{self.visit(node)}"
 
     def generic_visit(self, node):
-        if isinstance(
-            node, (ArgumentPlaceholder, ComparePlaceholder, Pipe, ListPlaceholder)
-        ):
-            self._source.append(node.to_arg())
+        if isinstance(node, (Pipe, _Argument.Placeholder)):
+            self._source.append(node.nldsl_code)
         else:
             return super().generic_visit(node)

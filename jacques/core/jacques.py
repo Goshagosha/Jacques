@@ -7,6 +7,7 @@ from jacques.core.rule import Rule
 from jacques.core.rule_synthesizer import RuleSynthesizer
 from jacques.core.example import Example, ExampleMatrix
 from nldsl import CodeGenerator, grammar
+from nldsl.pandas_extension import PandasExpressionRule
 
 
 class JastStorage:
@@ -38,21 +39,22 @@ class Jacques:
         self.examples = []
         self.dsl_parser = DslParser(jacques=self)
         self.python_parser = PythonParser(jacques=self)
-        self.rule_synthesizer = RuleSynthesizer(jacques=self)
+        self._rule_synthesizer = RuleSynthesizer(jacques=self)
         self.ruleset: Dict[str, Rule] = {}
-        self.context = {"grammar": grammar}
+        self._sandbox_context = {
+            "grammar": grammar,
+            "PandasExpressionRule": PandasExpressionRule,
+        }
 
     def _rules_from_matches(self, matches) -> None:
-        rules = self.rule_synthesizer.from_matches(matches)
+        rules = self._rule_synthesizer.from_matches(matches)
         for name, rule in rules.items():
             dsl_grammar = rule.original_dsl_jast.reconstruct_to_nldsl()
             f = rule.generate_function(name, dsl_grammar)
-            exec(f, self.context)
-            function = self.context[name]
+            exec(f, self._sandbox_context)
+            function = self._sandbox_context[name]
             self.code_generator.register_function(function, name)
 
-        dsl = "## on data | show"
-        c = self.code_generator(dsl)
         self.ruleset.update(rules)
 
     def process_all_examples(self):
@@ -60,8 +62,8 @@ class Jacques:
         while not finished:
             finished = True
             for example in self.examples:
-                for rule in self.ruleset.values():
-                    example.apply_rule(rule)
+                # for rule in self.ruleset.values():
+                #     example.apply_rule(rule)
                 matrix = example.to_matrix()
                 matches = matrix.matches()
                 self._rules_from_matches(matches)

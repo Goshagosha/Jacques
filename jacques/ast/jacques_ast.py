@@ -2,13 +2,9 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from ast import AST
 from typing import Dict, List
-from jacques.ast.python_ast_utils import (
-    ArgumentPlaceholder,
-    ComparePlaceholder,
-    ListPlaceholder,
-)
 
 from jacques.utils import id_generator
+from jacques.core.arguments import _Argument, Pipe
 
 
 class Visualizeable(ABC):
@@ -113,10 +109,8 @@ class DslJAST(JAST):
         result = []
         for h in self.deconstructed:
             arg = self.mapping[h]
-            if isinstance(
-                arg, (ArgumentPlaceholder, ListPlaceholder, ComparePlaceholder)
-            ):
-                result.append(arg.to_dsl_arg())
+            if isinstance(arg, (_Argument.Placeholder)):
+                result.append(arg.nldsl_dsl)
             else:
                 result.append(str(arg))
         return " ".join(result)

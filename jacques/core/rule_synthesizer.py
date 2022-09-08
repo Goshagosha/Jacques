@@ -2,16 +2,11 @@ from __future__ import annotations
 import ast
 from typing import TYPE_CHECKING
 from jacques.ast.python_ast_utils import (
-    ArgumentData,
     ArgumentExtractor,
-    CompareData,
-    ComparePlaceholder,
-    ListData,
     ListIndex,
-    ListPlaceholder,
-    ArgumentPlaceholder,
 )
-from jacques.utils import id_generator, key_by_value
+from jacques.core.arguments import _Argument, IdFactory
+from jacques.utils import key_by_value
 from jacques.ast.jacques_ast_utils import *
 from jacques.core.jacques_member import JacquesMember
 from jacques.core.rule import Rule
@@ -43,21 +38,14 @@ class RuleSynthesizer(JacquesMember):
         code_ast = CodeExtractor(self.jacques).extract(codejast_subtree)
 
         ast_args_list = ArgumentExtractor().extract(code_ast)
-        arg_id_gen = id_generator()
-        list_id_gen = id_generator()
-        compare_id_gen = id_generator()
-        ast_arg: ArgumentData | ListData | CompareData
+        id_factory = IdFactory()
+        ast_arg: _Argument.Code
         for ast_arg in ast_args_list:
             hash = key_by_value(
                 dsl_jast.mapping, ast_arg, lambda x, y: x.relaxed_equal(y)
             )
             if hash != None:
-                if isinstance(ast_arg, ArgumentData):
-                    placeholder = ArgumentPlaceholder(arg_id_gen, ast_arg.value)
-                if isinstance(ast_arg, ListData):
-                    placeholder = ListPlaceholder(list_id_gen, ast_arg.value)
-                if isinstance(ast_arg, CompareData):
-                    placeholder = ComparePlaceholder(compare_id_gen, ast_arg.value())
+                placeholder = ast_arg.create_placeholder(id_factory)
                 dsl_jast.mapping[hash] = placeholder
                 # Traverse the tree to the AST object to replace and replace it with the arg placeholder
                 code_ast = RuleSynthesizer._replace_in_path_with_placeholder(
@@ -75,7 +63,7 @@ class RuleSynthesizer(JacquesMember):
     def _replace_in_path_with_placeholder(
         ast_tree: ast.AST,
         path: list,
-        placeholder: ArgumentPlaceholder | ListPlaceholder | ComparePlaceholder,
+        placeholder: _Argument.Placeholder,
     ) -> ast.AST:
         # If path is empty, we must be in the Name node with a load ctx:
         if not path:

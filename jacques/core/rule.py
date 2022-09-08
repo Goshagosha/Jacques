@@ -3,7 +3,6 @@ import ast
 import re
 from typing import TYPE_CHECKING
 from jacques.ast.python_ast_utils import (
-    ArgumentPlaceholder,
     CustomUnparser,
     ToFunctionUnparser,
 )
@@ -45,7 +44,7 @@ class Rule:
 
     def generate_function(self, name, grammar) -> str:
         function_source = ToFunctionUnparser().visit(self.code_tree)
-        return f'@grammar\ndef {name}(pipe, args):\n\t"""\n\tGrammar:\n\t\t{grammar}\n\t"""\n\treturn f\'{function_source}\''
+        return f'@grammar(expr=PandasExpressionRule)\ndef {name}(pipe, args):\n\t"""\n\tGrammar:\n\t\t{grammar}\n\t"""\n\treturn f"{function_source}"'
 
     def scrap_code(self, code_source: str) -> str:
         return code_source
