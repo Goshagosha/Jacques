@@ -167,17 +167,6 @@ class Operaton(_Argument):
         def __str__(self) -> str:
             return f"{self.lhs} {self.op} {self.rhs}"
 
-    class Placeholder(_Argument.Placeholder):
-        base_shorthand = "opr"
-
-        @property
-        def nldsl_code(self) -> str:
-            return f"{{args['{self.shorthand}']}}"
-
-        @property
-        def nldsl_dsl(self):
-            return f"!{self.shorthand}"
-
     class Code(_Argument.Code):
         def __init__(self, path: List[str], lhs, op, rhs):
             self.path = path
@@ -191,6 +180,17 @@ class Operaton(_Argument):
         @property
         def value(self) -> str:
             return f"{self.lhs} {self.op} {self.rhs}"
+
+    class Placeholder(_Argument.Placeholder):
+        base_shorthand = "opr"
+
+        @property
+        def nldsl_code(self) -> str:
+            return f"{{args['{self.shorthand}']}}"
+
+        @property
+        def nldsl_dsl(self):
+            return f"!{self.shorthand}"
 
 
 class Pipe(AST):

@@ -7,17 +7,8 @@ from jacques.utils import id_generator
 from jacques.core.arguments import _Argument, Pipe
 
 
-class Visualizeable(ABC):
-    id_generator = id_generator()
-
-    @abstractmethod
-    def _visualize_recursive(self, graph) -> str:
-        ...
-
-
 class JAST:
     def __init__(self) -> None:
-        self.command: str = None
         self.children: List[JAST] = []
         self.depth: int = None
         self.inverse_depth: int = None
@@ -42,25 +33,6 @@ class JAST:
             self.inverse_depth = max_in_child + 1
         return self.inverse_depth
 
-    # def visualize(self, export_name) -> None:
-    #     graph = graphviz.Graph(name=export_name, format="png")
-    #     self._visualize_recursive(graph)
-    #     graph.render()
-
-    # def _visualize_recursive(self, graph) -> str:
-    #     id = next(self.id_generator)
-    #     label = f"depth:{self.depth}; inv.depth:{self.inverse_depth}\n{self.command}"
-    #     graph.node(id, label=label, shape="diamond")
-    #     for child in self.children:
-    #         child_id = child._visualize_recursive(graph)
-    #         graph.edge(id, child_id)
-    #     for argument, path in self.arguments.items():
-    #         arg_id = next(self.id_generator)
-    #         label = f"{path}\n{argument}"
-    #         graph.node(arg_id, label=label)
-    #         graph.edge(id, arg_id)
-    #     return id
-
     def __contains__(self, other_ast) -> bool:
         other_command = other_ast.command
         if self.command == other_command:
@@ -80,6 +52,7 @@ class JAST:
 class CodeJAST(JAST):
     def __init__(self):
         self.code_ast: AST = None
+        self.command = None
         super().__init__()
 
     def childfree_copy(self) -> CodeJAST:
@@ -98,18 +71,31 @@ class DslJAST(JAST):
         self.mapping: Dict = None
         super().__init__()
 
-    def reconstruct(self):
+    @property
+    def jacques_dsl(self) -> str:
         result = []
         for h in self.deconstructed:
             arg = self.mapping[h]
             result.append(str(arg))
         return " ".join(result)
 
-    def reconstruct_to_nldsl(self):
+    @property
+    def command(self) -> str:
+        command = []
+        for h in self.deconstructed:
+            arg = self.mapping[h]
+            if isinstance(arg, _Argument.Placeholder):
+                break
+            else:
+                command.append(str(arg))
+        return " ".join(command)
+
+    @property
+    def nldsl_dsl(self) -> str:
         result = []
         for h in self.deconstructed:
             arg = self.mapping[h]
-            if isinstance(arg, (_Argument.Placeholder)):
+            if isinstance(arg, _Argument.Placeholder):
                 result.append(arg.nldsl_dsl)
             else:
                 result.append(str(arg))

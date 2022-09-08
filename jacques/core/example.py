@@ -1,7 +1,9 @@
 from __future__ import annotations
+import ast
 from typing import TYPE_CHECKING
 import numpy as np
 import pandas as pd
+from jacques.ast.jacques_ast_utils import CodeExtractor, SubtreeBuilder
 from jacques.core.jacques_member import JacquesMember
 from jacques.core.rule import Rule
 
@@ -18,21 +20,25 @@ class Example(JacquesMember):
         super().__init__(jacques)
 
     def apply_rule(self, rule: Rule) -> None:
-        self.dsl_source = rule.scrap_dsl(self.dsl_source)
-        self.code_source = rule.scrap_code(self.code_source)
+        raise NotImplementedError
 
-    def to_matrix(self) -> ExampleMatrix:
+    def matrix(self) -> _ExampleMatrix:
         dsl_jast = self.jacques.dsl_parser.parse(self.dsl_source)
         code_jast = self.jacques.python_parser.parse(self.code_source)
-        return ExampleMatrix(list(dsl_jast), list(code_jast))
+        return _ExampleMatrix(self.jacques, list(dsl_jast), list(code_jast))
+
+    def matches(self) -> List[Tuple[DslJAST, ast.AST]]:
+        return self.matrix().matches()
 
 
-class ExampleMatrix:
+class _ExampleMatrix:
     def __init__(
         self,
+        jacques,
         dsl_header: List[DslJAST],
         code_header: List[CodeJAST],
     ) -> None:
+        self.jacques = jacques
         self.dsl_header = dsl_header
         self.code_header = code_header
 
@@ -59,7 +65,7 @@ class ExampleMatrix:
             )
         )
 
-    def __find_matches(self) -> Dict[int, List[int]]:
+    def _compute_matches(self) -> Dict[int, List[int]]:
         matches = {}
         y, x = self.m.shape
         for i in range(y):
@@ -76,11 +82,14 @@ class ExampleMatrix:
                 matches[i] = list(np.where(self.m[i] == 1)[0])
         return matches
 
-    def matches(self) -> List[Tuple[DslJAST, List[CodeJAST]]]:
-        matches = self.__find_matches()
+    def matches(self) -> List[Tuple[DslJAST, ast.AST]]:
+        matches = self._compute_matches()
         result = []
         for i, js in matches.items():
             dsl_jast = self.dsl_header[i]
             code_jasts = [self.code_header[j] for j in js]
-            result.append((dsl_jast, code_jasts))
+            codejast_complete_subtree = SubtreeBuilder().build(code_jasts)
+            code_ast = CodeExtractor(self.jacques).extract(codejast_complete_subtree)
+
+            result.append((dsl_jast, code_ast))
         return result

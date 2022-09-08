@@ -41,7 +41,6 @@ class DslParser(JacquesMember):
             jast_in_focus.dsl_string = subquery
             jast_in_focus.deconstructed = deconstructed
             jast_in_focus.mapping = mapping
-            jast_in_focus.command = subquery.split(" ")[0]
 
             if len(query_sequence) > 0:
                 jast_in_focus.children = [DslJAST()]

@@ -59,3 +59,7 @@ def key_by_value(dict, value, compare_callback=None):
         else:
             if val == value:
                 return key
+
+
+def sanitize_whitespace(string: str) -> str:
+    return "_".join(string.split())

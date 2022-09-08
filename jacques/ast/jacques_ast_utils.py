@@ -5,7 +5,8 @@ from jacques.core.arguments import Pipe
 
 
 class SubtreeBuilder:
-    """Takes a list of CodeJAST nodes and reassembles it into a CodeJAST subtree"""
+    """Takes a list of CodeJAST nodes and reassembles it into a CodeJAST subtree.
+    The nodes in the input list have ALL of their original children, but only the nodes in the list are included in the output tree."""
 
     def __init__(self):
         pass
