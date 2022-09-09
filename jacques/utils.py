@@ -61,5 +61,13 @@ def key_by_value(dict, value, compare_callback=None):
                 return key
 
 
-def sanitize_whitespace(string: str) -> str:
-    return "_".join(string.split())
+def sanitize_whitespace_and_symbols(string: str) -> str:
+    return string.translate({ord(c): "_" for c in " !@#$%^&*()[]{};:,./<>?\|`~-=_+"})
+
+
+def dict_to_string(dict: dict) -> str:
+    return "{ " + ", ".join([f"{key}: {value}" for key, value in dict.items()]) + " }"
+
+
+def indent(string: str, indent: int = 1) -> str:
+    return "\n".join([indent * "\t" + line for line in string.split("\n")])

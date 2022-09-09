@@ -1,14 +1,13 @@
-from argparse import ArgumentError
 import ast
-from typing import Any, TYPE_CHECKING
+from typing import Any
 from jacques.ast.jacques_ast import *
-from copy import deepcopy
 from jacques.core.jacques_member import JacquesMember
 
 
 ASSIGN_COMMAND_NAME = "assign"
 LOAD_COMMAND_NAME = "load"
 SUBSCRIPT_COMMAND_NAME = "subscript"
+IMPORT_COMMAND_NAME = "import"
 
 
 class PythonParser(JacquesMember):
@@ -16,7 +15,7 @@ class PythonParser(JacquesMember):
         super().__init__(jacques)
 
     def parse(self, source_string: str) -> CodeJAST:
-        entry_tree = ast.parse(source_string).body[0].value
+        entry_tree = ast.parse(source_string).body[0]
         bootstrap_jast = JastBuilder(jacques=self.jacques).visit(entry_tree)
         bootstrap_jast.inverse_depth_rec()
         return bootstrap_jast
@@ -51,6 +50,15 @@ class JastBuilder(ast.NodeVisitor):
             self.root_jast = new_jast
         self.jast = new_jast
         self.jast.code_ast = code_ast
+
+    def visit_Import(self, node: ast.Import) -> Any:
+        self.make_child(node)
+        self.jast.command = IMPORT_COMMAND_NAME
+        if isinstance(node.names[0], ast.alias):
+            self.encountered_objects.append(node.names[0].asname)
+        else:
+            self.encountered_objects.append(node.names[0].name)
+        super().generic_visit(node)
 
     def visit_Call(self, node: ast.Call) -> Any:
         self.make_child(node)

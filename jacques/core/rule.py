@@ -36,8 +36,12 @@ class Rule:
         return self.dsl_jast.nldsl_dsl
 
     @property
+    def nldsl_grammar_mods(self):
+        return self.dsl_jast.nldsl_grammar_mods
+
+    @property
     def nldsl_code(self) -> str:
-        return ToFunctionUnparser().visit(self.code_tree)
+        return ToFunctionUnparser().to_function(self.code_tree)
 
     def __str__(self):
         return f"{self.__class__}\n\t{self.dsl_source}\n\t{self.code_source}"

@@ -85,10 +85,20 @@ class DslJAST(JAST):
         for h in self.deconstructed:
             arg = self.mapping[h]
             if isinstance(arg, _Argument.Placeholder):
-                break
+                pass
             else:
                 command.append(str(arg))
         return " ".join(command)
+
+    @property
+    def nldsl_grammar_mods(self) -> str:
+        result = []
+        for h in self.deconstructed:
+            arg = self.mapping[h]
+            if isinstance(arg, _Argument.Placeholder):
+                if arg.nldsl_grammar_mod:
+                    result.append(arg.nldsl_grammar_mod)
+        return "\n".join(result)
 
     @property
     def nldsl_dsl(self) -> str:

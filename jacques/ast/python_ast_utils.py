@@ -1,6 +1,15 @@
 import ast
-from typing import Any, Dict, List, Tuple
-from jacques.core.arguments import _Argument, Listleton, Operaton, Pipe, Singleton
+from typing import Any, Dict, List
+
+from jacques.core.arguments import (
+    _Argument,
+    Dictleton,
+    Listleton,
+    Operaton,
+    Pipe,
+    Singleton,
+    ListIndex,
+)
 
 
 def unparse_comparator(comparator: ast.cmpop) -> str:
@@ -17,11 +26,6 @@ def unparse_comparator(comparator: ast.cmpop) -> str:
         "NotIn": "not in",
     }
     return CMPOPS[comparator.__class__.__name__]
-
-
-class ListIndex:
-    def __init__(self, index):
-        self.index = index
 
 
 class ArgumentExtractor(ast.NodeVisitor):
@@ -51,11 +55,24 @@ class ArgumentExtractor(ast.NodeVisitor):
         arg = Operaton.Code(self.path_in_ast, str(left), operation, str(right))
         self.arguments.append(arg)
 
+    def _add_dict(self, dict: Dict):
+        arg = Dictleton.Code(self.path_in_ast, dict)
+        self.arguments.append(arg)
+
+    def visit_Dict(self, node: ast.Dict) -> Any:
+        if len(node.keys) > 1:
+            raise NotImplementedError
+        d = {node.keys[0].value: node.values[0].value}
+        self._add_dict(d)
+
     def visit_Constant(self, node: ast.Constant) -> Any:
         self._add_argument(node.value)
 
     def visit_Name(self, node: ast.Name) -> Any:
         self._add_argument(node.id)
+
+    def visit_alias(self, node: ast.alias) -> Any:
+        self._add_argument(node.name)
 
     def visit_keyword(self, node: ast.keyword) -> Any:
         ArgumentExtractor(
@@ -101,11 +118,23 @@ class CustomUnparser(ast._Unparser):
 
 
 class ToFunctionUnparser(ast._Unparser):
+    def __init__(self) -> None:
+        super().__init__()
+        self.nldsl_code_mods = []
+
     def to_function(self, node: ast.AST) -> str:
-        return f"{self.visit(node)}"
+        source = self.visit(node)
+        NEWLINE = "\n"
+        return f'{NEWLINE.join(self.nldsl_code_mods)}{NEWLINE}return f"{source}"'
 
     def generic_visit(self, node):
-        if isinstance(node, (Pipe, _Argument.Placeholder)):
+        if isinstance(node, _Argument.Placeholder):
+            self._source.append(node.nldsl_code)
+            if node.nldsl_code_mod:
+                self.nldsl_code_mods.append(node.nldsl_code_mod)
+        elif isinstance(node, Pipe):
             self._source.append(node.nldsl_code)
         else:
+            # escape {}
+
             return super().generic_visit(node)
