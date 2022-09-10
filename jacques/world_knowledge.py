@@ -1,5 +1,8 @@
 EVAL_PIPE_PREFIX = "##"
 DEFINE_PIPE_PREFIX = "#!"
+COMMENT_PREFIX = "#"
+NEWLINE = "\n"
+DSL_INIT_STATEMENT = "target code ="
 
 COMMON_DSL_TOKENS = {
     # data = load from 'covid_19_data.csv' as csv_with_header

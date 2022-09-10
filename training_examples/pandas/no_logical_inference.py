@@ -39,8 +39,8 @@ intersected = data.merge(only_country_deaths)
 data[["SNo", "ObservationDate"]]
 
 # select_rows
-## on data | select rows 'SNo' > 100 and 'SNo' < 200
-data["SNo" > 100 & "SNo" < 200]
+## on data | select rows ('SNo' > 100) and ('SNo' < 200)
+data[('SNo' > 100) & ('SNo' < 200)] 
 
 # drop_columns
 ## on data | drop columns 'Confirmed'

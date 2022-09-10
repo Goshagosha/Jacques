@@ -86,14 +86,13 @@ class RuleSynthesizer(JacquesMember):
             ast_tree.keywords[index].value = upd
         elif attr_access == "elts":
             return placeholder
-        elif len(path) >= 2:
-            if isinstance(path[1], ListIndex):
-                index = path[1].index
-                subtree_list = ast_tree.__getattribute__(attr_access)
-                upd = RuleSynthesizer._replace_in_path_with_placeholder(
-                    subtree_list[index], path[2:], placeholder
-                )
-                subtree_list[index] = upd
+        elif len(path) >= 2 and isinstance(path[1], ListIndex):
+            index = path[1].index
+            subtree_list = ast_tree.__getattribute__(attr_access)
+            upd = RuleSynthesizer._replace_in_path_with_placeholder(
+                subtree_list[index], path[2:], placeholder
+            )
+            subtree_list[index] = upd
         else:
             subtree = ast_tree.__getattribute__(attr_access)
             upd = RuleSynthesizer._replace_in_path_with_placeholder(

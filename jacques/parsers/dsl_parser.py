@@ -32,6 +32,10 @@ class DslParser(JacquesMember):
         depth = 0
         jast_in_focus = jast
         query_sequence = source_string.split(" | ")
+        if (" = ") in query_sequence[0]:
+            split = query_sequence[0].split(" = ")
+            query_sequence[0] = split[1]
+            self.encountered_objects.append(split[0])
         while len(query_sequence) > 0:
             jast_in_focus.depth = depth
             depth += 1

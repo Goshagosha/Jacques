@@ -75,11 +75,6 @@ class JastBuilder(ast.NodeVisitor):
             self.jast.command = node.func.attr
         super().generic_visit(node)
 
-    def visit_Assign(self, node: ast.Assign) -> Any:
-        self.make_child(node)
-        self.jast.command = ASSIGN_COMMAND_NAME
-        super().generic_visit(node)
-
     def visit_Subscript(self, node: ast.Subscript) -> Any:
         self.make_child(node)
         self.jast.command = SUBSCRIPT_COMMAND_NAME

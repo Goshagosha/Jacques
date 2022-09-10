@@ -118,7 +118,8 @@ class Singleton(_Argument):
     class Code(_Argument.Code):
         def relaxed_equal(self, other) -> bool:
             if isinstance(other, Singleton.DSL):
-                return self.value == other.value or self.value == other.pure
+                value = str(self.value)
+                return value == other.value or value == other.pure
             return False
 
         def create_placeholder(self, id_generator: id_generator, matched_DSL) -> Any:
@@ -165,7 +166,6 @@ class Listleton(_Argument):
 
     class Code(_Argument.Code):
         def __init__(self, path: List[str], value: Any):
-            value = [Singleton.Code(ListIndex(i), x) for i, x in enumerate(value)]
             super().__init__(path, value)
 
         def relaxed_equal(self, other) -> bool:

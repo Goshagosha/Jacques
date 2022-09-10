@@ -82,10 +82,7 @@ class ArgumentExtractor(ast.NodeVisitor):
     def visit_List(self, node: List) -> Any:
         l = []
         for each in node.elts:
-            if isinstance(each, ast.Constant):
-                l.append(each.value)
-            else:
-                raise NotImplementedError
+            l.append(*ArgumentExtractor().extract(each))
         self._add_list(l)
 
     def visit_Compare(self, node: ast.Compare) -> Any:

@@ -17,6 +17,19 @@ _sandbox_context_preset = {
 }
 
 
+def generate_init_statement(dsl_string: str, code_string: str) -> Callable:
+    name = "initialize"
+    _grammar = f'"""\nGrammar:\n\t{dsl_string}\n"""'
+    code_string = f"return '''{code_string}'''"
+    function_code = (
+        f"@grammar\ndef {name}(code):\n{indent(_grammar)}\n{indent(code_string)}"
+    )
+    context = _sandbox_context()
+    exec(function_code, context)
+    function = context[name]
+    return function
+
+
 def _sandbox_context() -> dict:
     return _sandbox_context_preset.copy()
 
