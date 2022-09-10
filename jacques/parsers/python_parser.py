@@ -51,13 +51,20 @@ class JastBuilder(ast.NodeVisitor):
         self.jast = new_jast
         self.jast.code_ast = code_ast
 
+    def visit_alias(self, node: ast.alias) -> Any:
+        if node.asname:
+            self.encountered_objects.append(node.asname)
+        else:
+            self.encountered_objects.append(node.name)
+
     def visit_Import(self, node: ast.Import) -> Any:
         self.make_child(node)
         self.jast.command = IMPORT_COMMAND_NAME
-        if isinstance(node.names[0], ast.alias):
-            self.encountered_objects.append(node.names[0].asname)
-        else:
-            self.encountered_objects.append(node.names[0].name)
+        super().generic_visit(node)
+
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> Any:
+        self.make_child(node)
+        self.jast.command = IMPORT_COMMAND_NAME
         super().generic_visit(node)
 
     def visit_Call(self, node: ast.Call) -> Any:
