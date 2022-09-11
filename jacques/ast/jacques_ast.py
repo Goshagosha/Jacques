@@ -1,6 +1,7 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from ast import AST
+import re
 from typing import Dict, List
 
 from jacques.utils import id_generator
@@ -109,4 +110,15 @@ class DslJAST(JAST):
                 result.append(arg.nldsl_dsl)
             else:
                 result.append(str(arg))
+        return " ".join(result)
+
+    @property
+    def regex(self) -> str:
+        result = []
+        for h in self.deconstructed:
+            arg = self.mapping[h]
+            if isinstance(arg, _Argument.Placeholder):
+                result.append(arg.regex)
+            else:
+                result.append(re.escape(str(arg)))
         return " ".join(result)

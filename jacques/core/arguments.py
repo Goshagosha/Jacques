@@ -92,6 +92,10 @@ class _Argument(ABC):
         def nldsl_dsl(self):
             ...
 
+        @property
+        def regex(self):
+            return "(.*)"
+
         def __repr__(self) -> str:
             return f"<{self.shorthand.upper()}>"
 
@@ -252,20 +256,6 @@ class Operaton(_Argument):
             return f"!{self.shorthand}"
 
 
-class Pipe(AST):
-    base_shorthand = "pipe"
-
-    def __init__(self, placeholding_for: ast.Call | ast.Subscript) -> None:
-        self.placeholding_for = placeholding_for
-
-    def __repr__(self) -> str:
-        return f"<{self.base_shorthand.upper()}>"
-
-    @property
-    def nldsl_code(self) -> str:
-        return f"{{{self.base_shorthand}}}"
-
-
 class Dictleton(Singleton):
     class Code(Singleton.Code):
         def __init__(self, path: List[str], value: dict):
@@ -353,3 +343,17 @@ class Dictleton(Singleton):
             else:
                 rhs = f"args['{self.rhs.shorthand}']"
             return f'args["{self.shorthand}"] = {{{lhs} : {rhs}}}'
+
+
+class Pipe(AST):
+    base_shorthand = "pipe"
+
+    def __init__(self, placeholding_for: ast.Call | ast.Subscript) -> None:
+        self.placeholding_for = placeholding_for
+
+    def __repr__(self) -> str:
+        return f"<{self.base_shorthand.upper()}>"
+
+    @property
+    def nldsl_code(self) -> str:
+        return f"{{{self.base_shorthand}}}"

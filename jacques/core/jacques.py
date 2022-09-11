@@ -48,9 +48,10 @@ class Jacques:
         self._rule_synthesizer = RuleSynthesizer(jacques=self)
         self.ruleset: Dict[str, Rule] = {}
 
-    def _generate_rules(self, matches) -> None:
+    def _generate_rules(self, matches) -> bool:
         rules = self._rule_synthesizer.from_matches(matches)
         self.ruleset.update(rules)
+        return len(rules) > 0
 
     def _update_codegen(self) -> None:
         rule: Rule
@@ -59,18 +60,17 @@ class Jacques:
             self.code_generator.register_function(function, name)
 
     def process_all_examples(self):
-        finished = False
-        while not finished:
+        new_rules = True
+        while new_rules:
             finished = True
             example: Example
+            new_rules = False
             for example in self.examples:
-                # for rule in self.ruleset.values():
-                #     example.apply_rule(rule)
+                if example.is_exhausted:
+                    continue
                 matches = example.matches()
-                self._generate_rules(matches)
-                self._update_codegen()
-                anything_else_dumped = False  # Check if any matrices were updated
-                finished = finished and not anything_else_dumped
+                new_rules = new_rules or self._generate_rules(matches)
+        self._update_codegen()
 
     def push_init_statement(self, dsl_string: str, code_string: str) -> None:
         func = generate_init_statement(dsl_string, code_string)

@@ -1,4 +1,5 @@
 import ast
+import re
 from typing import Any, Dict, List
 
 from jacques.core.arguments import (
@@ -46,18 +47,26 @@ class ArgumentExtractor(ast.NodeVisitor):
         arg = Singleton.Code(self.path_in_ast, value)
         self.arguments.append(arg)
 
-    def _add_list(self, value):
-        arg = Listleton.Code(self.path_in_ast, value)
-        self.arguments.append(arg)
-
     def _add_comparator(self, left, comparator, right):
         operation = unparse_comparator(comparator)
         arg = Operaton.Code(self.path_in_ast, str(left), operation, str(right))
         self.arguments.append(arg)
 
+    def _add_list(self, value):
+        arg = Listleton.Code(self.path_in_ast, value)
+        self.arguments.append(arg)
+
     def _add_dict(self, dict: Dict):
         arg = Dictleton.Code(self.path_in_ast, dict)
         self.arguments.append(arg)
+
+    def visit_List(self, node: List) -> Any:
+        l = []
+        for each in node.elts:
+            args = ArgumentExtractor().extract(each)
+            if args:
+                l.append(*args)
+        self._add_list(l)
 
     def visit_Dict(self, node: ast.Dict) -> Any:
         if len(node.keys) > 1:
@@ -78,12 +87,6 @@ class ArgumentExtractor(ast.NodeVisitor):
         ArgumentExtractor(
             arguments=self.arguments, path_in_ast=self.path_in_ast + [node.arg]
         ).visit(node.value)
-
-    def visit_List(self, node: List) -> Any:
-        l = []
-        for each in node.elts:
-            l.append(*ArgumentExtractor().extract(each))
-        self._add_list(l)
 
     def visit_Compare(self, node: ast.Compare) -> Any:
         self._add_comparator(node.left.value, node.ops[0], node.comparators[0].value)
@@ -106,7 +109,7 @@ class ArgumentExtractor(ast.NodeVisitor):
                 ).visit(value)
 
 
-class CustomUnparser(ast._Unparser):
+class JacquesUnparser(ast._Unparser):
     def generic_visit(self, node):
         if isinstance(node, (Pipe, _Argument.Placeholder)):
             self._source.append(str(node))

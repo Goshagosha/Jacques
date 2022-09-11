@@ -70,17 +70,20 @@ def extract_subtree_by_reference_as_reference_list(
     if target.command == reference.command:
         ref_child_dict = {r.command: r for r in reference.children}
         list = [target]
-        for child in target.children:
-            if child.command in ref_child_dict.keys():
-                child_match = clone_matched(child, ref_child_dict[child.command])
-                if not child_match:
+        if ref_child_dict:
+            for child in target.children:
+                if child.command in ref_child_dict.keys():
+                    child_match = extract_subtree_by_reference_as_reference_list(
+                        child, ref_child_dict[child.command]
+                    )
+                    if not child_match:
+                        matched = False
+                        break
+                    else:
+                        list.extend(child_match)
+                else:
                     matched = False
                     break
-                else:
-                    list.extend(child_match)
-            else:
-                matched = False
-                break
         if matched:
             return list
     return []

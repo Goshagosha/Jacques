@@ -21,15 +21,16 @@ class RuleSynthesizer(JacquesMember):
     def __init__(self, jacques: Jacques) -> None:
         super().__init__(jacques=jacques)
 
-    def from_matches(self, matches: List[Tuple[DslJAST, ast.AST]]) -> Dict[str, Rule]:
+    def from_matches(self, matches: List[Tuple[DslJAST, CodeJAST]]) -> Dict[str, Rule]:
         rules: Dict[str, Rule] = {}
         for each in matches:
             (name, rule) = self._from_match(*each)
             rules[name] = rule
         return rules
 
-    def _from_match(self, dsl_jast: DslJAST, code_ast: ast.AST) -> Tuple[str, Rule]:
+    def _from_match(self, dsl_jast: DslJAST, code_jast: CodeJAST) -> Tuple[str, Rule]:
 
+        code_ast = CodeExtractor(self.jacques).extract(code_jast)
         ast_args_list = ArgumentExtractor().extract(code_ast)
         id_factory = IdProvider()
         ast_arg: _Argument.Code
@@ -65,7 +66,8 @@ class RuleSynthesizer(JacquesMember):
         return dsl_jast.command, Rule(
             dsl_source=dsl_source,
             code_tree=code_ast,
-            original_dsl_jast=dsl_jast,
+            dsl_jast=dsl_jast,
+            code_jast=code_jast,
         )
 
     def _replace_in_path_with_placeholder(
