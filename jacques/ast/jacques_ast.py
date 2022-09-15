@@ -3,15 +3,16 @@ from abc import ABC, abstractmethod
 from ast import AST
 import re
 from typing import Dict, List
+from jacques.ast.python_ast_utils import JacquesUnparser
 
 from jacques.utils import id_generator
-from jacques.core.arguments import _Argument, Pipe
+from jacques.core.arguments import _Argument, Choicleton, Pipe, Singleton
 
 
 class JAST:
     def __init__(self) -> None:
         self.children: List[JAST] = []
-        self.depth: int = None
+        self.depth: int = 0
         self.inverse_depth: int = None
         self.parent: JAST = None
 
@@ -20,6 +21,7 @@ class JAST:
         parent.children.append(self)
 
     def add_child(self, child: JAST):
+        child.depth = self.depth + 1
         self.children.append(child)
         child.parent = self
 
@@ -51,17 +53,19 @@ class JAST:
 
 
 class CodeJAST(JAST):
-    def __init__(self):
-        self.code_ast: AST = None
-        self.command = None
-        super().__init__()
+    def __init__(self, code_ast, command, *args, **kwargs) -> None:
+        self.code_ast: AST = code_ast
+        self.command = command
+        super().__init__(*args, **kwargs)
+
+    @property
+    def source_code(self):
+        return JacquesUnparser().visit(self.code_ast)
 
     def childfree_copy(self) -> CodeJAST:
-        new = CodeJAST()
-        new.command = self.command
+        new = CodeJAST(self.code_ast, self.command)
         new.depth = self.depth
         new.inverse_depth = self.inverse_depth
-        new.code_ast = self.code_ast
         return new
 
 
@@ -72,11 +76,46 @@ class DslJAST(JAST):
         self.mapping: Dict = None
         super().__init__()
 
+    def merge(self, other: DslJAST) -> List[str]:
+        """
+        Returns:
+            str: The choice keyword for new option
+        """
+        for i in range(len(self.deconstructed)):
+            l_hash = self.deconstructed[i]
+            r_hash = other.deconstructed[i]
+            l_arg = self.mapping[l_hash]
+            r_arg = other.mapping[r_hash]
+            if isinstance(l_arg, Singleton.Placeholder):
+                if l_arg != r_arg:
+                    choicleton = Choicleton.Placeholder(l_arg, r_arg)
+                    self.mapping[l_hash] = choicleton
+                    return l_arg.choices
+            elif isinstance(l_arg, Choicleton.Placeholder):
+                l_arg.add_choice(r_arg)
+                return l_arg.choices
+
+    @property
+    def nldsl_code_choice(self) -> str:
+        for h in self.deconstructed:
+            if isinstance(h, Choicleton.Placeholder):
+                return h.nldsl_code_choice
+
     @property
     def jacques_dsl(self) -> str:
         result = []
         for h in self.deconstructed:
             arg = self.mapping[h]
+            result.append(str(arg))
+        return " ".join(result)
+
+    @property
+    def name(self) -> str:
+        result = []
+        for h in self.deconstructed:
+            arg = self.mapping[h]
+            if isinstance(arg, (_Argument.Placeholder, Pipe)):
+                break
             result.append(str(arg))
         return " ".join(result)
 

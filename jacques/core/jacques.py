@@ -3,13 +3,15 @@ from lib2to3.pgen2.token import NEWLINE
 from typing import Dict, List, Tuple
 from jacques.ast.jacques_ast import CodeJAST, DslJAST
 from jacques.core.nldsl_utils import generate_function, generate_init_statement
-from jacques.parsers.dsl_parser import DslParser
-from jacques.parsers.python_parser import PythonParser
+from jacques.ast.parsers.dsl_parser import DslParser
+from jacques.ast.parsers.python_parser import PythonParser
 from jacques.core.rule import Rule
 from jacques.core.rule_synthesizer import RuleSynthesizer
 from jacques.core.example import Example, _ExampleMatrix
 from jacques.utils import sanitize
 from nldsl import CodeGenerator
+from jacques.world_knowledge import *
+import loguru
 
 
 class Buffer:
@@ -37,8 +39,7 @@ class Buffer:
 
 
 class Jacques:
-    def __init__(self, world_knowledge) -> None:
-        self.world_knowledge = world_knowledge
+    def __init__(self) -> None:
         self.encountered_objects: List[str] = []
 
         self.code_generator = CodeGenerator()
@@ -48,39 +49,45 @@ class Jacques:
         self._rule_synthesizer = RuleSynthesizer(jacques=self)
         self.ruleset: Dict[str, Rule] = {}
 
-    def _generate_rules(self, matches) -> bool:
-        rules = self._rule_synthesizer.from_matches(matches)
-        self.ruleset.update(rules)
+    def encountered(self, object):
+        if object not in self.encountered_objects:
+            self.encountered_objects.append(object)
+
+    def _generate_rules(self, example: Example) -> bool:
+        rules = self._rule_synthesizer.from_example(example)
+        for rule in rules:
+            self._register_rule(rule)
         return len(rules) > 0
 
-    def _update_codegen(self) -> None:
-        rule: Rule
-        for name, rule in self.ruleset.items():
-            function = generate_function(rule)
-            self.code_generator.register_function(function, name)
+    def _add_to_ruleset(self, rule: Rule):
+        if rule.name in self.ruleset:
+            self.ruleset[rule.name].merge(rule)
+        else:
+            self.ruleset[rule.name] = rule
+
+    def _register_rule(self, rule: Rule):
+        name = rule.name
+        self._add_to_ruleset(rule)
+        function = generate_function(self.ruleset[name])
+        self.code_generator.register_function(function, name)
 
     def process_all_examples(self):
         new_rules = True
         while new_rules:
-            finished = True
             example: Example
             new_rules = False
             for example in self.examples:
                 if example.is_exhausted:
                     continue
-                matches = example.matches()
-                new_rules = new_rules or self._generate_rules(matches)
-        self._update_codegen()
+                new_rules = new_rules or self._generate_rules(example)
 
     def push_init_statement(self, dsl_string: str, code_string: str) -> None:
         func = generate_init_statement(dsl_string, code_string)
         self.code_generator.register_function(func, "initialize")
 
     def push_example(self, dsl_string: str, code_string: str) -> None:
-        if dsl_string.startswith(self.world_knowledge.EVAL_PIPE_PREFIX):
-            dsl_string = sanitize(
-                dsl_string[len(self.world_knowledge.EVAL_PIPE_PREFIX) :]
-            )
+        if dsl_string.startswith(EVAL_PIPE_PREFIX):
+            dsl_string = sanitize(dsl_string[len(EVAL_PIPE_PREFIX) :])
         self.examples.append(Example(self, dsl_string, code_string))
 
     def push_examples_from_file(self, path: str) -> None:
@@ -88,22 +95,17 @@ class Jacques:
         with open(path, "r") as file:
 
             for line in file.readlines():
-                if line.startswith(self.world_knowledge.EVAL_PIPE_PREFIX):
-                    current_dsl = sanitize(
-                        line[len(self.world_knowledge.EVAL_PIPE_PREFIX) :]
-                    )
+                if line.startswith(EVAL_PIPE_PREFIX):
+                    current_dsl = sanitize(line[len(EVAL_PIPE_PREFIX) :])
                     if not buffer.is_empty:
                         dsl, code = buffer.flush()
-                        if dsl.startswith(self.world_knowledge.DSL_INIT_STATEMENT):
+                        if dsl.startswith(DSL_INIT_STATEMENT):
                             self.push_init_statement(dsl, code)
                         else:
                             self.push_example(dsl, code)
 
                     buffer.push_dsl(current_dsl)
-                elif (
-                    line.startswith(self.world_knowledge.COMMENT_PREFIX)
-                    or line == self.world_knowledge.NEWLINE
-                ):
+                elif line.startswith(COMMENT_PREFIX) or line == NEWLINE:
                     continue
                 else:
                     buffer.push_code(line)

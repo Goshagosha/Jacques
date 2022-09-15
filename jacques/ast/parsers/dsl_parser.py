@@ -35,7 +35,7 @@ class DslParser(JacquesMember):
         if (" = ") in query_sequence[0]:
             split = query_sequence[0].split(" = ")
             query_sequence[0] = split[1]
-            self.encountered_objects.append(split[0])
+            self.jacques.encountered(split[0])
         while len(query_sequence) > 0:
             jast_in_focus.depth = depth
             depth += 1

@@ -2,18 +2,15 @@ from abc import ABC, abstractmethod, abstractproperty
 from ast import AST
 import ast
 from calendar import c
+import re
 from tokenize import Single
 from typing import Any, List, Tuple
-from jacques.utils import id_generator
+from jacques.utils import id_generator, is_float
 
 
 class IdProvider:
     def __init__(self) -> None:
-        pass
-        # self.singleton_id_gen = id_generator()
-        # self.listleton_id_gen = id_generator()
-        # self.operaton_id_gen = id_generator()
-        # self.choicleton_id_gen = id_generator()
+        ...
 
     def __getattribute__(self, __name: str) -> Any:
         if __name.endswith("_id_gen"):
@@ -41,20 +38,12 @@ class _Argument(ABC):
         def __str__(self) -> str:
             ...
 
-    class Code(ABC):
-        def __init__(self, path: List[str], value: Any):
-            self.path = path
-            self.value = value
-
         @abstractmethod
-        def relaxed_equal(self, other: Any) -> bool:
+        def relaxed_equal(self, other) -> bool:
             ...
 
-        @abstractmethod
-        def create_placeholder(
-            self, id_generator: id_generator, matched_DSL: Any
-        ) -> Any:
-            ...
+        def __eq__(self, __o: object) -> bool:
+            return self.value == __o.value
 
     class Placeholder(ABC, AST):
         base_shorthand: str
@@ -104,6 +93,8 @@ class Singleton(_Argument):
     class DSL(_Argument.DSL):
         @property
         def is_in_quotes(self) -> bool:
+            if not isinstance(self.value, str):
+                return False
             if len(self.value) < 2:
                 return False
             return (self.value[0] == '"' and self.value[-1] == '"') or (
@@ -114,23 +105,25 @@ class Singleton(_Argument):
         def pure(self) -> str:
             if self.is_in_quotes:
                 return self.value[1:-1]
+            if self.is_number:
+                try:
+                    if "." in self.value:
+                        return float(self.value)
+                    else:
+                        return int(self.value)
+                except TypeError:
+                    pass
             return self.value
+
+        @property
+        def is_number(self) -> bool:
+            return is_float(self.value)
 
         def __str__(self) -> str:
             return str(self.value)
 
-    class Code(_Argument.Code):
-        def relaxed_equal(self, other) -> bool:
-            if isinstance(other, Singleton.DSL):
-                value = str(self.value)
-                return value == other.value or value == other.pure
-            return False
-
-        def create_placeholder(self, id_generator: id_generator, matched_DSL) -> Any:
-            # Hacky:
-            # if not matched_DSL.is_in_quotes:
-            #     return Choicleton.Placeholder(id_generator, self.value, matched_DSL)
-            return Singleton.Placeholder(id_generator, self.value)
+        def relaxed_equal(self, other: str | int | float) -> bool:
+            return self.pure == other or self.value == other
 
     class Placeholder(_Argument.Placeholder):
         base_shorthand = "arg"
@@ -145,49 +138,46 @@ class Singleton(_Argument):
 
 
 class Choicleton(Singleton):
-    class DSL(Singleton.DSL):
-        ...
-
-    class Code(Singleton.Code):
-        ...
-
     class Placeholder(Singleton.Placeholder):
         base_shorthand = "cho"
 
-        def __init__(self, id_factory: IdProvider, examples, matched_DSL):
-            super().__init__(id_factory, examples)
-            self.choices = [matched_DSL.pure]
+        def __init__(self, l_arg: Singleton.Placeholder, r_arg: Singleton.Placeholder):
+            self.id = l_arg.id
+            self.examples = [l_arg.value, r_arg.value]
+            self.choices = [l_arg.pure, r_arg.pure]
+
+        def add_choice(self, choice: Singleton.Placeholder):
+            self.examples.append(choice.value)
+            self.choices.append(choice.pure)
+
+        @property
+        def nldsl_code_choice(self) -> str:
+            return f"{{args['{self.shorthand}']}}"
 
         @property
         def nldsl_grammar_mod(self) -> str:
-            return self.nldsl_dsl + f"{{{', '.join(self.choices)}}}\n"
+            return self.nldsl_dsl + f" {{{', '.join(self.choices)}}}\n"
 
 
 class Listleton(_Argument):
     class DSL(_Argument.DSL):
         def __str__(self) -> str:
-            return " ,".join([str(x) for x in self.value])
+            return ", ".join([str(x) for x in self.value])
 
-    class Code(_Argument.Code):
-        def __init__(self, path: List[str], value: Any):
-            super().__init__(path, value)
-
-        def relaxed_equal(self, other) -> bool:
-            if not isinstance(other, (Listleton.DSL, Singleton.DSL)):
-                return False
-            if isinstance(other, Singleton.DSL):
-                return self.value[0].relaxed_equal(other)
-            if isinstance(other, Listleton.DSL):
-                if len(self.value) != len(other.value):
+        def relaxed_equal(self, other: list | str) -> bool:
+            if isinstance(other, list):
+                if len(self.value) != len(other):
                     return False
-
                 match = True
                 for i in range(len(self.value)):
-                    match = match and self.value[i].relaxed_equal(other.value[i])
+                    match = match and self.value[i].relaxed_equal(other[i])
                 return match
-
-        def create_placeholder(self, id_generator: id_generator, matched_DSL) -> Any:
-            return Listleton.Placeholder(id_generator, self.value)
+            elif isinstance(other, str):
+                if len(self.value) != 1:
+                    return False
+                return self.value[0].relaxed_equal(other)
+            else:
+                raise NotImplementedError
 
     class Placeholder(_Argument.Placeholder):
         base_shorthand = "lst"
@@ -221,28 +211,8 @@ class Operaton(_Argument):
         def __str__(self) -> str:
             return f"{self.lhs} {self.op} {self.rhs}"
 
-    class Code(_Argument.Code):
-        def __init__(self, path: List[str], lhs, op, rhs):
-            self.path = path
-            self.lhs = Singleton.Code([], lhs)
-            self.op = Singleton.Code([], op)
-            self.rhs = Singleton.Code([], rhs)
-
         def relaxed_equal(self, other) -> bool:
-            if not isinstance(other, Operaton.DSL):
-                return False
-            return (
-                self.lhs.relaxed_equal(other.lhs)
-                and self.op.relaxed_equal(other.op)
-                and self.rhs.relaxed_equal(other.rhs)
-            )
-
-        def create_placeholder(self, id_generator: id_generator, matched_DSL) -> Any:
-            return Operaton.Placeholder(id_generator, self.value)
-
-        @property
-        def value(self) -> str:
-            return f"{self.lhs} {self.op} {self.rhs}"
+            raise NotImplementedError
 
     class Placeholder(_Argument.Placeholder):
         base_shorthand = "opr"
@@ -257,50 +227,6 @@ class Operaton(_Argument):
 
 
 class Dictleton(Singleton):
-    class Code(Singleton.Code):
-        def __init__(self, path: List[str], value: dict):
-            if len(value) > 1:
-                raise ValueError("Dictleton can only contain one key-value pair")
-            value = [
-                Singleton.Code([], list(value.keys())[0]),
-                Singleton.Code([], list(value.values())[0]),
-            ]
-            super().__init__(path, value)
-
-        def relaxed_equal(self, other: Singleton.DSL) -> bool:
-            return self.lhs.relaxed_equal(other) or self.rhs.relaxed_equal(other)
-
-        def get_placeholder(self, id_generator: id_generator) -> Any:
-            try:
-                return self._placeholder
-            except AttributeError:
-                self._placeholder = self.create_placeholder(id_generator)
-                return self._placeholder
-
-        @property
-        def lhs(self) -> str:
-            return self.value[0]
-
-        @lhs.setter
-        def lhs(self, value: Singleton.Code):
-            self.value[0] = value
-
-        @property
-        def rhs(self) -> str:
-            return self.value[1]
-
-        @rhs.setter
-        def rhs(self, value: Singleton.Code):
-            self.value[1] = value
-
-        def create_placeholder(
-            self,
-            id_generator: id_generator,
-        ) -> Any:
-            placeholder = Dictleton.Placeholder(id_generator, self.value)
-            placeholder.value = self.value.copy()
-            return placeholder
-
     class Placeholder(Singleton.Placeholder):
         base_shorthand = "dct"
 

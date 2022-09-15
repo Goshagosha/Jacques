@@ -3,9 +3,8 @@ import sys
 sys.path.append(".")
 
 from jacques.core.jacques import Jacques
-import jacques.world_knowledge as world_knowledge
 
-j = Jacques(world_knowledge)
+j = Jacques()
 j.encountered_objects = ["data"]
 
 

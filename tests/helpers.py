@@ -1,11 +1,10 @@
 from pathlib import Path
 
-import jacques.world_knowledge as wk
 from main import Jacques
 
 
 def pp(string):
-    j = Jacques(wk)
+    j = Jacques()
     return j.python_parser.parse(string)
 
 

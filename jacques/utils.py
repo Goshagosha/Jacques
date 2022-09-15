@@ -2,11 +2,12 @@ from typing import Callable, Counter, List
 import numpy as np
 
 
-def is_float(string):
+def is_float(string) -> bool:
     if isinstance(string, bool):
         return False
     try:
-        return float(string) and True
+        _ = float(string)
+        return True
     except ValueError:
         return False
 

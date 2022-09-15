@@ -11,6 +11,7 @@ from jacques.core.arguments import (
     Singleton,
     ListIndex,
 )
+from ast import _Precedence
 
 
 def unparse_comparator(comparator: ast.cmpop) -> str:
@@ -123,9 +124,7 @@ class ToFunctionUnparser(ast._Unparser):
         self.nldsl_code_mods = []
 
     def to_function(self, node: ast.AST) -> str:
-        source = self.visit(node)
-        NEWLINE = "\n"
-        return f'{NEWLINE.join(self.nldsl_code_mods)}{NEWLINE}return f"{source}"'
+        return self.visit(node)
 
     def generic_visit(self, node):
         if isinstance(node, _Argument.Placeholder):
@@ -138,3 +137,25 @@ class ToFunctionUnparser(ast._Unparser):
             # escape {}
 
             return super().generic_visit(node)
+
+    def visit_Dict(self, node):
+        def write_key_value_pair(k, v):
+            self.traverse(k)
+            self.write(": ")
+            self.traverse(v)
+
+        def write_item(item):
+            k, v = item
+            if k is None:
+                # for dictionary unpacking operator in dicts {**{'y': 2}}
+                # see PEP 448 for details
+                self.write("**")
+                self.set_precedence(_Precedence.EXPR, v)
+                self.traverse(v)
+            else:
+                write_key_value_pair(k, v)
+
+        with self.delimit("{{", "}}"):
+            self.interleave(
+                lambda: self.write(", "), write_item, zip(node.keys, node.values)
+            )

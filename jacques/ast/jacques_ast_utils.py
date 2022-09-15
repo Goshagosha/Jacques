@@ -54,7 +54,7 @@ def clone_matched(target: CodeJAST, reference: CodeJAST) -> CodeJAST:
         return clone if matched else None
 
 
-def extract_subtree_by_reference_as_reference_list(
+def extract_subtree_by_ref_as_ref_list(
     target: CodeJAST, reference: CodeJAST
 ) -> List[CodeJAST]:
     """Same as clone_matched, but extracts the match as a list with direct references in target
@@ -73,7 +73,7 @@ def extract_subtree_by_reference_as_reference_list(
         if ref_child_dict:
             for child in target.children:
                 if child.command in ref_child_dict.keys():
-                    child_match = extract_subtree_by_reference_as_reference_list(
+                    child_match = extract_subtree_by_ref_as_ref_list(
                         child, ref_child_dict[child.command]
                     )
                     if not child_match:
@@ -93,20 +93,24 @@ class CodeExtractor(ast.NodeTransformer):
     """Takes a CodeJAST subtree and extracts proper AST subtree"""
 
     def __init__(self, jacques) -> None:
-        self.encountered_objects = jacques.encountered_objects
+        self.jacques = jacques
+        self.pipe_nodes = None
         super().__init__()
 
-    def extract(self, root_code_jast: CodeJAST) -> ast.AST:
+    def extract(self, root_code_jast: CodeJAST, pipe_nodes: List[CodeJAST]) -> ast.AST:
         self.asts: List[ast.AST] = [jast.code_ast for jast in root_code_jast]
+        self.pipe_nodes: List[ast.AST] = [jast.code_ast for jast in pipe_nodes]
         return super().visit(root_code_jast.code_ast)
 
     def pipe(self, node):
-        if node not in self.asts:
+        if node in self.pipe_nodes:
             return Pipe(placeholding_for=node)
         return self.generic_visit(node)
 
     def visit_Name(self, node: ast.Call):
-        if isinstance(node.ctx, ast.Load) and (node.id in self.encountered_objects):
+        if isinstance(node.ctx, ast.Load) and (
+            node.id in self.jacques.encountered_objects
+        ):
             return self.pipe(node)
         else:
             return self.generic_visit(node)

@@ -1,12 +1,11 @@
 from typing import Dict
-import jacques.world_knowledge as wk
 import logging
 
 from main import Jacques
 
 
 def process_fresh(dsl: str, py: str, encountered_objects=None) -> Jacques:
-    j = Jacques(wk)
+    j = Jacques()
     if encountered_objects:
         j.encountered_objects = encountered_objects
     j.push_example(dsl, py)
