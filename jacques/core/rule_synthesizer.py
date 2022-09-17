@@ -25,8 +25,10 @@ class RuleSynthesizer(JacquesMember):
         super().__init__(jacques=jacques)
 
     def from_example(self, example: Example) -> List[Rule]:
+        logger.debug(f"Processing example: {example}")
         rules: List[Rule] = []
         matches = example.matches()
+        logger.debug(f"Found {len(matches)} matches")
         for each in matches:
             # WARNING, similar commands with different keywords will not be parsed properly
             rule = self._from_match(*each)
@@ -37,6 +39,8 @@ class RuleSynthesizer(JacquesMember):
     def _from_match(
         self, dsl_jast: DslJAST, code_jast: CodeJAST, pipe_nodes: List[CodeJAST]
     ) -> Rule:
+        logger.debug(f"Dsl jast: {dsl_jast.command}")
+        logger.debug(f"Code jast: {code_jast.source_code}")
         code_ast = CodeExtractor(self.jacques).extract(code_jast, pipe_nodes)
         id_provider = IdProvider()
         for hash in dsl_jast.mapping:

@@ -10,6 +10,10 @@ data = pd.read_csv('covid_19_data.csv')
 ## df1 = create dataframe from data with header 'Country/Region' | save to 'save_target.csv' as csv 
 df1 = pd.DataFrame(data, columns=['Country/Region']).to_csv('save_target.csv') 
 
+# create_dataframe & save_to csv
+## df2 = create dataframe from data with header 'Country/Region' | save to 'save_target.csv' as csv 
+df2 = pd.DataFrame(data, columns=['Country/Region']).to_csv('save_target.csv') 
+
 # union & save_to json
 ## on data | union df1 | save to 'another_save.json' as json 
 pd.concat([data, df1]).to_json('another_save.json') 

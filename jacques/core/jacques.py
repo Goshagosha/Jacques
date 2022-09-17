@@ -12,6 +12,7 @@ from jacques.utils import sanitize
 from nldsl import CodeGenerator
 from jacques.world_knowledge import *
 from loguru import logger
+import sys
 
 
 class Buffer:
@@ -85,7 +86,7 @@ class Jacques:
                 if example.is_exhausted:
                     continue
                 new_rules = new_rules or self._generate_rules(example)
-        logger.log("INFO", "{} rules generated.", len(self.ruleset))
+        logger.info("{} rules generated.", len(self.ruleset))
 
     def push_init_statement(self, dsl_string: str, code_string: str) -> None:
         func = generate_init_statement(dsl_string, code_string)
