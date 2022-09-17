@@ -12,6 +12,16 @@ def is_float(string) -> bool:
         return False
 
 
+def is_superstring(long: str, short: str):
+    in_short_at = 0
+    for char in long:
+        if char == short[in_short_at]:
+            in_short_at += 1
+            if in_short_at == len(short):
+                return True
+    return False
+
+
 def id_generator():
     num = 0
     while True:

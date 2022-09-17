@@ -141,9 +141,10 @@ class Choicleton(Singleton):
     class Placeholder(Singleton.Placeholder):
         base_shorthand = "cho"
 
-        def __init__(self, l_arg: Singleton.Placeholder, r_arg: Singleton.Placeholder):
-            self.id = l_arg.id
+        def __init__(self, l_arg: Singleton.DSL, r_arg: Singleton.DSL, id_provider):
             self.examples = [l_arg.value, r_arg.value]
+            id_generator = self._id_generator_ref(id_provider)
+            self.id = next(id_generator)
             self.choices = [l_arg.pure, r_arg.pure]
 
         def add_choice(self, choice: Singleton.Placeholder):
@@ -152,7 +153,7 @@ class Choicleton(Singleton):
 
         @property
         def nldsl_code_choice(self) -> str:
-            return f"{{args['{self.shorthand}']}}"
+            return f"args['{self.shorthand}']"
 
         @property
         def nldsl_grammar_mod(self) -> str:
@@ -211,8 +212,17 @@ class Operaton(_Argument):
         def __str__(self) -> str:
             return f"{self.lhs} {self.op} {self.rhs}"
 
-        def relaxed_equal(self, other) -> bool:
-            raise NotImplementedError
+        def relaxed_equal(self, vals: list) -> bool:
+            if not isinstance(vals, list):
+                return False
+            lhs = vals[0]
+            op = vals[1]
+            rhs = vals[2]
+            return (
+                self.lhs.relaxed_equal(lhs)
+                and self.op.relaxed_equal(op)
+                and self.rhs.relaxed_equal(rhs)
+            )
 
     class Placeholder(_Argument.Placeholder):
         base_shorthand = "opr"

@@ -124,7 +124,7 @@ class ToFunctionUnparser(ast._Unparser):
         self.nldsl_code_mods = []
 
     def to_function(self, node: ast.AST) -> str:
-        return self.visit(node)
+        return self.visit(node), self.nldsl_code_mods
 
     def generic_visit(self, node):
         if isinstance(node, _Argument.Placeholder):

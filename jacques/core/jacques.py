@@ -5,13 +5,13 @@ from jacques.ast.jacques_ast import CodeJAST, DslJAST
 from jacques.core.nldsl_utils import generate_function, generate_init_statement
 from jacques.ast.parsers.dsl_parser import DslParser
 from jacques.ast.parsers.python_parser import PythonParser
-from jacques.core.rule import Rule
+from jacques.core.rule import ConditionalRule, Rule
 from jacques.core.rule_synthesizer import RuleSynthesizer
 from jacques.core.example import Example, _ExampleMatrix
 from jacques.utils import sanitize
 from nldsl import CodeGenerator
 from jacques.world_knowledge import *
-import loguru
+from loguru import logger
 
 
 class Buffer:
@@ -61,7 +61,12 @@ class Jacques:
 
     def _add_to_ruleset(self, rule: Rule):
         if rule.name in self.ruleset:
-            self.ruleset[rule.name].merge(rule)
+            old_rule = self.ruleset[rule.name]
+            if isinstance(old_rule, Rule):
+                self.ruleset[rule.name] = ConditionalRule(old_rule, rule)
+            else:
+                old_rule.add_option(rule)
+            logger.info(f"Updated rule: {self.ruleset[rule.name]}")
         else:
             self.ruleset[rule.name] = rule
 
@@ -80,6 +85,7 @@ class Jacques:
                 if example.is_exhausted:
                     continue
                 new_rules = new_rules or self._generate_rules(example)
+        logger.log("INFO", "{} rules generated.", len(self.ruleset))
 
     def push_init_statement(self, dsl_string: str, code_string: str) -> None:
         func = generate_init_statement(dsl_string, code_string)

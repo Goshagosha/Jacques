@@ -17,15 +17,15 @@ if TYPE_CHECKING:
 class Rule:
     def __init__(
         self,
-        dsl_source: str,
         code_tree: ast.AST,
         dsl_jast: DslJAST,
         code_jast: CodeJAST,
+        id_provider: IdProvider,
     ) -> None:
-        self.dsl_source = dsl_source
         self.code_tree = code_tree
         self.dsl_jast = dsl_jast
         self.code_jast = code_jast
+        self.id_provider = id_provider
 
     @property
     def name(self) -> str:
@@ -34,6 +34,10 @@ class Rule:
     @property
     def code_source(self) -> str:
         return JacquesUnparser().visit(self.code_tree)
+
+    @property
+    def dsl_source(self) -> str:
+        return self.dsl_jast.jacques_dsl
 
     @property
     def nldsl_dsl(self) -> str:
@@ -45,8 +49,8 @@ class Rule:
 
     @property
     def nldsl_code(self) -> str:
-        source = ToFunctionUnparser().to_function(self.code_tree)
-        return f'{NEWLINE.join(self.nldsl_code_mods)}{NEWLINE}return f"{source}"'
+        source, nldsl_code_mods = ToFunctionUnparser().to_function(self.code_tree)
+        return f'{NEWLINE.join(nldsl_code_mods)}{NEWLINE}return f"{source}"'
 
     @property
     def regex_dsl(self) -> str:
@@ -62,37 +66,40 @@ class Rule:
 class ConditionalRule(Rule):
     def __init__(
         self,
+        rule_1: Rule,
+        rule_2: Rule,
     ) -> None:
-        self.dsl_jast: DslJAST = None
-        self.dsl_sources = {}
-        self.code_trees = {}
-        self.code_jasts = {}
-        self.choices = []
+        dsl_source_1 = rule_1.dsl_source
+        dsl_jast_1 = rule_1.dsl_jast
+        code_tree_1 = rule_1.code_tree
+        code_jast_1 = rule_1.code_jast
+        dsl_source_2 = rule_2.dsl_source
+        dsl_jast_2 = rule_2.dsl_jast
+        code_tree_2 = rule_2.code_tree
+        code_jast_2 = rule_2.code_jast
 
+        self.id_provider = rule_1.id_provider
 
-    @property
-    def dsl_jast(self) -> DslJAST:
-        return self.dsl_jast
+        self.dsl_jast: DslJAST = dsl_jast_1
+        choices = self.dsl_jast.merge(dsl_jast_2, self.id_provider)
+        self.dsl_sources = {choices[0]: dsl_source_1, choices[1]: dsl_source_2}
+        self.code_trees = {choices[0]: code_tree_1, choices[1]: code_tree_2}
+        self.code_jasts = {choices[0]: code_jast_1, choices[1]: code_jast_2}
+        self.choices = choices
 
-    def _add_dsl_jast(self, value: DslJAST) -> None:
-        if self.dsl_jast is None:
-            self.dsl_jast = value
-        else:
-            self.choices = self.dsl_jast.merge(value)
-
-    def add_choice(
+    def add_option(
         self,
-        dsl_source: str,
-        dsl_jast: DslJAST,
-        code_tree: ast.AST,
-        code_jast: CodeJAST,
-    ):
-        self._add_dsl_jast(dsl_jast)
-
-        # nonsense
-        self.dsl_source(choice) = dsl_source
-        self._code_tree(choice) = code_tree
-        self._code_jast(choice) = code_jast
+        rule: Rule,
+    ) -> None:
+        dsl_source = rule.dsl_source
+        dsl_jast = rule.dsl_jast
+        code_tree = rule.code_tree
+        code_jast = rule.code_jast
+        self.choices = self.dsl_jast.merge(dsl_jast, self.id_provider)
+        new_choice = self.choices[-1]
+        self.dsl_sources[new_choice] = dsl_source
+        self.code_trees[new_choice] = code_tree
+        self.code_jasts[new_choice] = code_jast
 
     @property
     def nldsl_code_choice(self):
@@ -100,11 +107,32 @@ class ConditionalRule(Rule):
 
     @property
     def nldsl_code(self) -> str:
-        sources = {
-            choice: ToFunctionUnparser().to_function(self.code_trees[choice])
-            for choice in self.code_trees
-        }
+        sources = {}
+        for choice in self.code_trees:
+            source, nldsl_code_mods = ToFunctionUnparser().to_function(
+                self.code_trees[choice]
+            )
+            sources[choice] = source
         source = NEWLINE
         for each in sources:
-            source += f'{INDENT + NEWLINE}elif {self.nldsl_code_choice} == {each}:{NEWLINE + INDENT*2}return f"{sources[each]}"'
-        return f"{NEWLINE.join(self.nldsl_code_mods)}{source}"
+            source += f'{INDENT + NEWLINE}elif {self.nldsl_code_choice} == "{each}":{NEWLINE + INDENT}return f"{sources[each]}"'
+        source = source[5:]
+        return f"{NEWLINE.join(nldsl_code_mods)}{source}"
+
+    def __str__(self):
+        code_source = "\n\t".join(
+            [
+                JacquesUnparser().visit(self.code_trees[choice])
+                for choice in self.code_trees
+            ]
+        )
+        return f"{self.__class__}\n\t{self.dsl_source}\n\t{code_source}"
+
+    def __repr__(self) -> str:
+        code_source = "\n\t".join(
+            [
+                JacquesUnparser().visit(self.code_trees[choice])
+                for choice in self.code_trees
+            ]
+        )
+        return f"{self.__class__}( {self.dsl_source} :: {code_source} )"

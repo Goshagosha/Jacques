@@ -1,7 +1,8 @@
 import ast
 from ast import NodeTransformer
 from typing import Any, Tuple
-from jacques.core.arguments import _Argument, Listleton, Singleton, IdProvider
+from jacques.ast.python_ast_utils import unparse_comparator
+from jacques.core.arguments import _Argument, Listleton, Operaton, Singleton, IdProvider
 
 
 class ArgumentReplacer(NodeTransformer):
@@ -26,6 +27,11 @@ class ArgumentReplacer(NodeTransformer):
                 self.placeholder = Singleton.Placeholder(self.id_provider, value)
         return self.placeholder
 
+    def _operaton_placeholder(self, value):
+        if not self.placeholder:
+            self.placeholder = Operaton.Placeholder(self.id_provider, value)
+        return self.placeholder
+
     def visit_Constant(self, node: ast.Constant) -> Any:
         if self._match(node.value):
             return self._placeholder(node.value)
@@ -39,6 +45,14 @@ class ArgumentReplacer(NodeTransformer):
     def visit_alias(self, node: ast.alias) -> Any:
         if self._match(node.name):
             return self._placeholder(node.name)
+        return super().generic_visit(node)
+
+    def visit_Compare(self, node: ast.Compare) -> Any:
+        op = unparse_comparator(node.ops[0])
+        if self._match([node.left.value, op, node.comparators[0].value]):
+            return self._operaton_placeholder(
+                [node.left.value, op, node.comparators[0].value]
+            )
         return super().generic_visit(node)
 
     def visit_List(self, node: ast.List) -> Any:

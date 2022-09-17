@@ -81,9 +81,9 @@ def extract_subtree_by_ref_as_ref_list(
                         break
                     else:
                         list.extend(child_match)
-                else:
-                    matched = False
-                    break
+                # else:
+                #     matched = False
+                #     break
         if matched:
             return list
     return []

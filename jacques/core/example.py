@@ -9,7 +9,9 @@ from jacques.ast.jacques_ast_utils import (
     extract_subtree_by_ref_as_ref_list,
 )
 from jacques.core.jacques_member import JacquesMember
-from jacques.core.rule import Rule
+from jacques.core.rule import ConditionalRule, Rule
+from jacques.utils import is_superstring
+from jacques.world_knowledge import *
 
 
 if TYPE_CHECKING:
@@ -100,25 +102,36 @@ class _ExampleMatrix:
                 )
 
                 generated_code = self.jacques.code_generator(
-                    self.jacques.world_knowledge.EVAL_PIPE_PREFIX
-                    + " "
-                    + dsl_jast.dsl_string
+                    EVAL_PIPE_PREFIX + " " + dsl_jast.dsl_string
                 )
                 if len(generated_code) != 1:
                     continue
                 generated_code = generated_code[0]
                 # Now we check every legal node for the match:
                 for code_jast in code_header_legal_subset:
-                    matched_code_jast_list = extract_subtree_by_ref_as_ref_list(
-                        code_jast, rule.code_jast
-                    )
-                    if (
-                        matched_code_jast_list
-                        and code_jast.source_code == generated_code
-                    ):
-                        self.m[i, :] = 0
-                        for code_jast in matched_code_jast_list:
-                            self.m[:, self.code_header.index(code_jast)] = 0
+                    if isinstance(rule, ConditionalRule):
+                        for rule_code_jast in rule.code_jasts.values():
+                            matched_code_jast_list = extract_subtree_by_ref_as_ref_list(
+                                code_jast, rule_code_jast
+                            )
+                            if matched_code_jast_list and is_superstring(
+                                code_jast.source_code, generated_code
+                            ):
+                                self.m[i, :] = 0
+                                for code_jast in matched_code_jast_list:
+                                    self.m[:, self.code_header.index(code_jast)] = 0
+                                self.pipe_nodes[i - 1].append(matched_code_jast_list[0])
+                    elif isinstance(rule, Rule):
+                        matched_code_jast_list = extract_subtree_by_ref_as_ref_list(
+                            code_jast, rule.code_jast
+                        )
+                        if matched_code_jast_list and is_superstring(
+                            code_jast.source_code, generated_code
+                        ):
+                            self.m[i, :] = 0
+                            for code_jast in matched_code_jast_list:
+                                self.m[:, self.code_header.index(code_jast)] = 0
+                            self.pipe_nodes[i - 1].append(matched_code_jast_list[0])
 
     @property
     def exhausted(self):

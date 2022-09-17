@@ -6,7 +6,7 @@ from typing import Dict, List
 from jacques.ast.python_ast_utils import JacquesUnparser
 
 from jacques.utils import id_generator
-from jacques.core.arguments import _Argument, Choicleton, Pipe, Singleton
+from jacques.core.arguments import _Argument, Choicleton, IdProvider, Pipe, Singleton
 
 
 class JAST:
@@ -76,7 +76,7 @@ class DslJAST(JAST):
         self.mapping: Dict = None
         super().__init__()
 
-    def merge(self, other: DslJAST) -> List[str]:
+    def merge(self, other: DslJAST, id_provider: IdProvider) -> List[str]:
         """
         Returns:
             str: The choice keyword for new option
@@ -86,11 +86,11 @@ class DslJAST(JAST):
             r_hash = other.deconstructed[i]
             l_arg = self.mapping[l_hash]
             r_arg = other.mapping[r_hash]
-            if isinstance(l_arg, Singleton.Placeholder):
+            if isinstance(l_arg, Singleton.DSL):
                 if l_arg != r_arg:
-                    choicleton = Choicleton.Placeholder(l_arg, r_arg)
+                    choicleton = Choicleton.Placeholder(l_arg, r_arg, id_provider)
                     self.mapping[l_hash] = choicleton
-                    return l_arg.choices
+                    return self.mapping[l_hash].choices
             elif isinstance(l_arg, Choicleton.Placeholder):
                 l_arg.add_choice(r_arg)
                 return l_arg.choices
@@ -98,8 +98,9 @@ class DslJAST(JAST):
     @property
     def nldsl_code_choice(self) -> str:
         for h in self.deconstructed:
-            if isinstance(h, Choicleton.Placeholder):
-                return h.nldsl_code_choice
+            arg = self.mapping[h]
+            if isinstance(arg, Choicleton.Placeholder):
+                return arg.nldsl_code_choice
 
     @property
     def jacques_dsl(self) -> str:
@@ -160,4 +161,4 @@ class DslJAST(JAST):
                 result.append(arg.regex)
             else:
                 result.append(re.escape(str(arg)))
-        return " ".join(result)
+        return "(\s)*^" + " ".join(result) + "(\s)*$"

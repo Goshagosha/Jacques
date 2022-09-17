@@ -3,24 +3,24 @@
 import pandas as pd
 
 # load_from
-## data = load from 'covid_19_data.csv' as csv_with_header 
-data = pd.read_csv('covid_19_data.csv') 
+## data = load from 'covid_19_data.csv' as csv_with_header
+data = pd.read_csv("covid_19_data.csv")
 
 # on_dataframe
 ## on data
 data
 
 # create_dataframe
-## only_country_deaths = create dataframe from data with header 'Country/Region', 'Deaths' 
-only_country_deaths = pd.DataFrame(data, columns=['Country/Region', 'Deaths']) 
+## only_country_deaths = create dataframe from data with header 'Country/Region', 'Deaths'
+only_country_deaths = pd.DataFrame(data, columns=["Country/Region", "Deaths"])
 
 # save_to csv
-## on data | save to 'output.csv' as csv 
-data.to_csv('output.csv') 
+## on data | save to 'output.csv' as csv
+data.to_csv("output.csv")
 
 # save_to json
-## on data | save to 'output.json' as json 
-data.to_json('output.json') 
+## on data | save to 'output.json' as json
+data.to_json("output.json")
 
 # union
 ## united = on data | union only_country_deaths
@@ -40,7 +40,7 @@ data[["SNo", "ObservationDate"]]
 
 # select_rows
 ## on data | select rows ('SNo' > 100) and ('SNo' < 200)
-data[('SNo' > 100) & ('SNo' < 200)] 
+data[("SNo" > 100) & ("SNo" < 200)]
 
 # drop_columns
 ## on data | drop columns 'Confirmed'
