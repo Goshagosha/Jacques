@@ -87,16 +87,29 @@ class _ExampleMatrix:
     def _root_partitions(
         self, code_jast: CodeJAST, dsl_inverse_depth
     ) -> List[List[CodeJAST]]:
-        if dsl_inverse_depth < 0:
-            return []
         subparts = []
         for child in code_jast.children:
-            if child.inverse_depth >= dsl_inverse_depth - 1:
-                subparts.extend(self._root_partitions(child, dsl_inverse_depth - 1))
-        partitions = [[code_jast] + subpart for subpart in subparts if subpart]
-        if not partitions:
-            partitions = [[code_jast]]
-        return partitions
+            subparts.extend(self._root_partitions_rec(child, dsl_inverse_depth - 1))
+        return [[code_jast] + subpart for subpart in subparts]
+
+    def _root_partitions_rec(
+        self, code_jast: CodeJAST, dsl_inverse_depth
+    ) -> List[List[CodeJAST]]:
+        if dsl_inverse_depth == 0:
+            return [[code_jast]]
+        elif dsl_inverse_depth > code_jast.inverse_depth:
+            return []
+        else:
+            subparts = []
+            subparts_skipping = []
+            for child in code_jast.children:
+                subparts.extend(self._root_partitions_rec(child, dsl_inverse_depth - 1))
+                if code_jast.inverse_depth > dsl_inverse_depth:
+                    subparts_skipping.extend(
+                        self._root_partitions_rec(child, dsl_inverse_depth)
+                    )
+            subparts = [[code_jast] + subpart for subpart in subparts]
+            return subparts + subparts_skipping
 
     def _update_with_rules(self) -> None:
         for rule in self.jacques.ruleset.values():

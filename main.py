@@ -18,12 +18,13 @@ dsl, code = s.split("\n")[1:3]
 j.push_example(dsl, code)
 #########################################################
 s = """
-## on data | apply mean on 'Deaths' as 'Mean deaths' | apply max on 'Confirmed' as 'Max confirmed' 
-data.agg({'Deaths' : 'mean'}).rename(columns={'Deaths' : 'Mean deaths'}).agg({'Confirmed' : 'max'}).rename(columns={'Confirmed' : 'Max confirmed'}) 
+## on data | drop columns 'Confirmed'
+data.drop(columns=['Confirmed'])
 """
 dsl, code = s.split("\n")[1:3]
 j.push_example(dsl, code)
 ##########################################################
+
 
 j.process_all_examples()
 pass

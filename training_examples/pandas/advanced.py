@@ -44,8 +44,10 @@ print(data['Active' > 200].join(other_df, on=['Active', 'Deaths'], how='right').
 data.agg({'Active' : 'sum'}).rename(columns={'Active' : 'Total active'}).agg({'Confirmed' : 'min'}).rename(columns={'Confirmed' : 'Least confirmed'}).info(verbose=False) 
 
 # union & rename_columns & rename_columns & describe
-## on data | rename columns 'Confirmed' to 'Confident', 'Active' to 'Still ill' | rename columns 'Deaths' to 'Departed' | describe 
-data.rename(columns={'Confirmed': 'Confident', 'Active': 'Still ill'}).rename(columns={'Deaths': 'Departed'}).describe() 
+# ## on data | rename columns 'Confirmed' to 'Confident', 'Active' to 'Still ill' | rename columns 'Deaths' to 'Departed' | describe 
+# data.rename(columns={'Confirmed': 'Confident', 'Active': 'Still ill'}).rename(columns={'Deaths': 'Departed'}).describe() 
+## on data | rename columns 'Confirmed' to 'Confident'| rename columns 'Deaths' to 'Departed' | describe 
+data.rename(columns={'Confirmed': 'Confident'}).rename(columns={'Deaths': 'Departed'}).describe() 
 
 # drop_duplicates & sort_by ... ascending & create_dataframe & count
 ## no_of_something = create dataframe from data with header 'Confirmed', 'Country/Region', 'Active' | drop duplicates | sort by 'Active' ascending | count 
