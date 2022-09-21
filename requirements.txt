@@ -3,3 +3,6 @@ pytest
 pandas
 nldsl
 loguru
+fastapi
+pydantic
+uvicorn[standard]

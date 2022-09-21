@@ -6,3 +6,4 @@ test.py
 *.gv.png
 __pycache__
 .VSCodeCounter
+*.code-workspace
