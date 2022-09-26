@@ -9,9 +9,16 @@ from jacques.ast.python_ast_utils import (
 from jacques.ast.jacques_ast_utils import *
 from jacques.core.arguments import _Argument, Choicleton
 from jacques.world_knowledge import *
+from pydantic import BaseModel
 
 if TYPE_CHECKING:
     from jacques.ast.jacques_ast import DslJAST
+
+
+class RuleModel(BaseModel):
+    name: str
+    dsl: str
+    code: str
 
 
 class Rule:
@@ -26,6 +33,13 @@ class Rule:
         self.dsl_jast = dsl_jast
         self.code_jast = code_jast
         self.id_provider = id_provider
+
+    def to_model(self) -> RuleModel:
+        return RuleModel(
+            name=self.name,
+            dsl=self.dsl_source,
+            code=self.code_source,
+        )
 
     @property
     def name(self) -> str:

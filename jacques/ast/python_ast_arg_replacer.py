@@ -1,7 +1,7 @@
 import ast
 from ast import NodeTransformer
 from typing import Any, Tuple
-from jacques.ast.python_ast_utils import unparse_comparator
+from jacques.ast.python_ast_utils import unparse_comparator, unparse_operation
 from jacques.core.arguments import _Argument, Listleton, Operaton, Singleton, IdProvider
 
 
@@ -53,6 +53,12 @@ class ArgumentReplacer(NodeTransformer):
             return self._operaton_placeholder(
                 [node.left.value, op, node.comparators[0].value]
             )
+        return super().generic_visit(node)
+
+    def visit_BinOp(self, node: ast.BinOp) -> Any:
+        op = unparse_operation(node.op)
+        if self._match([node.left.value, op, node.right.value]):
+            return self._operaton_placeholder([node.left.value, op, node.right.value])
         return super().generic_visit(node)
 
     def visit_List(self, node: ast.List) -> Any:

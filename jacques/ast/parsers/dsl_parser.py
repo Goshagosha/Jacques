@@ -72,7 +72,7 @@ class DslParser(JacquesMember):
                 l, c, r = buffer.flush()
                 result.append(Operaton.DSL(l, c, r, len(result)))
                 operation_is_on = False
-            elif re.match("[><]+|[><=]\{2\}", each):
+            elif re.match("[+\-\/*%]|[><]|[><=]\{2\}", each):
                 buffer.append(result.pop().value)
                 buffer.append(each)
                 operation_is_on = True
@@ -97,7 +97,7 @@ class DslParser(JacquesMember):
             elif isinstance(each, Operaton.DSL):
                 starts_at = each.index_in_parent
                 ends_at = 3 + starts_at
-                split = split[:starts_at] + [h] + split[ends_at + 1 :]
+                split = split[:starts_at] + [h] + split[ends_at:]
             else:
                 split[each.index_in_parent] = h
             dictionary[h] = each

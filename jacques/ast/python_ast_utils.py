@@ -30,6 +30,24 @@ def unparse_comparator(comparator: ast.cmpop) -> str:
     return CMPOPS[comparator.__class__.__name__]
 
 
+def unparse_operation(operation: ast.AST) -> str:
+    OPERATIONS = {
+        "Add": "+",
+        "Sub": "-",
+        "Mult": "*",
+        "Div": "/",
+        "Mod": "%",
+        "Pow": "**",
+        "LShift": "<<",
+        "RShift": ">>",
+        "BitOr": "|",
+        "BitXor": "^",
+        "BitAnd": "&",
+        "FloorDiv": "//",
+    }
+    return OPERATIONS[operation.__class__.__name__]
+
+
 class ArgumentExtractor(ast.NodeVisitor):
     def __init__(self, arguments=None, path_in_ast=None) -> None:
         if arguments is None:
@@ -50,6 +68,11 @@ class ArgumentExtractor(ast.NodeVisitor):
 
     def _add_comparator(self, left, comparator, right):
         operation = unparse_comparator(comparator)
+        arg = Operaton.Code(self.path_in_ast, str(left), operation, str(right))
+        self.arguments.append(arg)
+
+    def _add_operation(self, left, op, right):
+        operation = unparse_operation(op)
         arg = Operaton.Code(self.path_in_ast, str(left), operation, str(right))
         self.arguments.append(arg)
 
@@ -91,6 +114,9 @@ class ArgumentExtractor(ast.NodeVisitor):
 
     def visit_Compare(self, node: ast.Compare) -> Any:
         self._add_comparator(node.left.value, node.ops[0], node.comparators[0].value)
+
+    def visit_BinOp(self, node: ast.BinOp) -> Any:
+        self._add_operation(node.left.value, node.op, node.right.value)
 
     def generic_visit(self, node):
         """Called if no explicit visitor function exists for a node."""
