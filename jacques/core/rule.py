@@ -10,12 +10,14 @@ from jacques.ast.jacques_ast_utils import *
 from jacques.core.arguments import _Argument, Choicleton
 from jacques.world_knowledge import *
 from pydantic import BaseModel
+from loguru import logger
 
 if TYPE_CHECKING:
     from jacques.ast.jacques_ast import DslJAST
 
 
 class RuleModel(BaseModel):
+    id: int
     name: str
     dsl: str
     code: str
@@ -36,10 +38,19 @@ class Rule:
 
     def to_model(self) -> RuleModel:
         return RuleModel(
+            id=self.id,
             name=self.name,
             dsl=self.dsl_source,
             code=self.code_source,
         )
+
+    def from_model(self, model: RuleModel) -> Rule:
+        raise NotImplementedError
+        self.id = model.id
+        self.name = model.name
+        self.dsl_source = model.dsl
+        self.code_source = model.code
+        return self
 
     @property
     def name(self) -> str:
@@ -132,6 +143,11 @@ class ConditionalRule(Rule):
             source += f'{INDENT + NEWLINE}elif {self.nldsl_code_choice} == "{each}":{NEWLINE + INDENT}return f"{sources[each]}"'
         source = source[5:]
         return f"{NEWLINE.join(nldsl_code_mods)}{source}"
+
+    @property
+    def code_source(self) -> str:
+        logger.info(self.nldsl_code)
+        return self.nldsl_code
 
     def __str__(self):
         code_source = "\n\t".join(

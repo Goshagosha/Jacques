@@ -90,7 +90,9 @@ class _ExampleMatrix:
         subparts = []
         for child in code_jast.children:
             subparts.extend(self._root_partitions_rec(child, dsl_inverse_depth - 1))
-        return [[code_jast] + subpart for subpart in subparts]
+        if subparts:
+            return [[code_jast] + subpart for subpart in subparts]
+        return [[code_jast]]
 
     def _root_partitions_rec(
         self, code_jast: CodeJAST, dsl_inverse_depth

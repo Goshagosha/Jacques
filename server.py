@@ -9,12 +9,14 @@ import argparse
 
 # only for incoming post
 class ExampleModel(BaseModel):
+    id: str
     dsl: str
     code: str
 
 
 # only for post response
 class Status(BaseModel):
+    id: str
     status: str
 
 
@@ -25,14 +27,31 @@ jacques = Jacques()
 @app.post("/push_example", response_model=Status)
 async def push_example(example: ExampleModel):
     logger.info(f"Server received an example: {example}")
-    jacques.push_example(example.dsl, example.code)
-    return Status(status="example received")
+    id = example.id
+    try:
+        jacques.push_example(example.dsl, example.code)
+    except Exception as e:
+        logger.error(f"Server failed to push example: {e}")
+        return Status(id=id, status="warning")
+    return Status(id=id, status="ok")
 
 
-@app.post("/process_all_examples", response_model=Status)
+@app.post("/update_rule", response_model=Status)
+async def update_rule(rule: RuleModel):
+    logger.info(f"Server received a rule update: {rule}")
+    id = rule.id
+    try:
+        jacques.update_rule(Rule.from_model(rule))
+    except Exception as e:
+        logger.error(f"Rule update failed: {e}")
+        return Status(id=id, status="warning")
+    return Status(id=id, status="ok")
+
+
+@app.get("/process_all_examples", response_model=Status)
 async def process_all_examples():
     jacques.process_all_examples()
-    return Status(status="All examples processed")
+    return Status(id=-1, status="All examples processed")
 
 
 @app.get(
@@ -41,6 +60,12 @@ async def process_all_examples():
 async def get_rules():
     rules = [rule.to_model() for rule in jacques.ruleset.values()]
     return rules
+
+
+@app.get("/reset", response_model=Status)
+async def get_rules():
+    jacques.reset()
+    return Status(id=-1, status="ok")
 
 
 if __name__ == "__main__":

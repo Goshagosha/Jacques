@@ -92,6 +92,15 @@ class Jacques:
         func = generate_init_statement(dsl_string, code_string)
         self.code_generator.register_function(func, "initialize")
 
+    def update_rule(self, rule: Rule):
+        raise NotImplementedError
+
+    def reset(self):
+        self.encountered_objects = []
+        self.examples = []
+        self.ruleset = {}
+        self.code_generator = CodeGenerator()
+
     def push_example(self, dsl_string: str, code_string: str) -> None:
         if dsl_string.startswith(EVAL_PIPE_PREFIX):
             dsl_string = sanitize(dsl_string[len(EVAL_PIPE_PREFIX) :])
