@@ -75,6 +75,11 @@ class Jacques:
         name = rule.name
         self._add_to_ruleset(rule)
         function = generate_function(self.ruleset[name])
+        try:
+            self.code_generator.remove_function(name)
+            logger.debug(f'Removed old function "{name}" before updating')
+        except KeyError as e:
+            pass
         self.code_generator.register_function(function, name)
 
     def process_all_examples(self):

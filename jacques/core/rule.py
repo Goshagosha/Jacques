@@ -1,9 +1,10 @@
 from __future__ import annotations
 import ast
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict
 from jacques.ast.python_ast_utils import (
     JacquesUnparser,
+    MissingArgumentFixer,
     ToFunctionUnparser,
 )
 from jacques.ast.jacques_ast_utils import *
@@ -26,15 +27,17 @@ class RuleModel(BaseModel):
 class Rule:
     def __init__(
         self,
-        code_tree: ast.AST,
         dsl_jast: DslJAST,
         code_jast: CodeJAST,
         id_provider: IdProvider,
     ) -> None:
-        self.code_tree = code_tree
         self.dsl_jast = dsl_jast
         self.code_jast = code_jast
         self.id_provider = id_provider
+
+    @property
+    def code_tree(self) -> ast.AST:
+        return self.code_jast.code_ast
 
     def to_model(self) -> RuleModel:
         return RuleModel(
@@ -96,11 +99,9 @@ class ConditionalRule(Rule):
     ) -> None:
         dsl_source_1 = rule_1.dsl_source
         dsl_jast_1 = rule_1.dsl_jast
-        code_tree_1 = rule_1.code_tree
         code_jast_1 = rule_1.code_jast
         dsl_source_2 = rule_2.dsl_source
         dsl_jast_2 = rule_2.dsl_jast
-        code_tree_2 = rule_2.code_tree
         code_jast_2 = rule_2.code_jast
 
         self.id_provider = rule_1.id_provider
@@ -108,9 +109,22 @@ class ConditionalRule(Rule):
         self.dsl_jast: DslJAST = dsl_jast_1
         choices = self.dsl_jast.merge(dsl_jast_2, self.id_provider)
         self.dsl_sources = {choices[0]: dsl_source_1, choices[1]: dsl_source_2}
-        self.code_trees = {choices[0]: code_tree_1, choices[1]: code_tree_2}
         self.code_jasts = {choices[0]: code_jast_1, choices[1]: code_jast_2}
+        self._fix_code_asts()
         self.choices = choices
+
+    @property
+    def nldsl_dsl(self) -> str:
+        return self.dsl_jast.nldsl_dsl
+
+    @property
+    def code_trees(self) -> Dict[str | ast.AST]:
+        return {choice: self.code_jasts[choice].code_ast for choice in self.code_jasts}
+
+    def _fix_code_asts(self) -> None:
+        for choice in self.code_jasts:
+            args = self.dsl_jast.placeholders
+            MissingArgumentFixer(args).visit(self.code_trees[choice])
 
     def add_option(
         self,
@@ -142,7 +156,7 @@ class ConditionalRule(Rule):
         for each in sources:
             source += f'{INDENT + NEWLINE}elif {self.nldsl_code_choice} == "{each}":{NEWLINE + INDENT}return f"{sources[each]}"'
         source = source[5:]
-        return f"{NEWLINE.join(nldsl_code_mods)}{source}"
+        return f"{NEWLINE.join(nldsl_code_mods)}{NEWLINE}{source}"
 
     @property
     def code_source(self) -> str:

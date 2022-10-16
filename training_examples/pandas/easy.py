@@ -63,15 +63,18 @@ data.head(100).to_json('first_hundred.json')
 print(data[['Confirmed', 'Deaths']]) 
 
 # append_column & sort_by ... ascending
-## on data | append column 'Confirmed' - 'Deaths' as 'Survivors' | sort by 'Survivors' ascending 
+# on data | append column 'Confirmed' - 'Deaths' as 'Survivors' | sort by 'Survivors' ascending 
+## on data | append column 'Confirmed' - 'Deaths' as 'Survivors' | sort ascending by 'Survivors' 
 data.assign(**{'Survivors': data.apply(lambda row: 'Confirmed' - 'Deaths', axis=1).values}).sort_values(['Survivors'], axis='index', ascending=[True]) 
 
 # sort_by ... descending & drop_duplicates
-## on data | sort by 'Deaths' descending | drop duplicates 
+# on data | sort by 'Deaths' descending | drop duplicates 
+## on data | sort descending by 'Deaths' | drop duplicates 
 data.sort_values(['Deaths'], axis='index', ascending=[False]).drop_duplicates() 
 
 # apply mean & sort_by ascending
-## on data | apply mean on 'Deaths' as 'Mean deaths' | sort by 'Mean deaths' ascending 
+# on data | apply mean on 'Deaths' as 'Mean deaths' | sort by 'Mean deaths' ascending 
+## on data | apply mean on 'Deaths' as 'Mean deaths' | sort by ascending 'Mean deaths'
 data.agg({'Deaths' : 'mean'}).rename(columns={'Deaths' : 'Mean deaths'}).sort_values(['Mean deaths'], axis='index', ascending=[True]) 
 
 # head & count

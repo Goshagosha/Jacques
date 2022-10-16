@@ -6,7 +6,14 @@ from typing import Dict, List
 from jacques.ast.python_ast_utils import JacquesUnparser
 
 from jacques.utils import id_generator
-from jacques.core.arguments import _Argument, Choicleton, IdProvider, Pipe, Singleton
+from jacques.core.arguments import (
+    _Argument,
+    Choicleton,
+    IdProvider,
+    Listleton,
+    Pipe,
+    Singleton,
+)
 
 
 class JAST:
@@ -82,11 +89,14 @@ class DslJAST(JAST):
             str: The choice keyword for new option
         """
         for i in range(len(self.deconstructed)):
+
             l_hash = self.deconstructed[i]
             r_hash = other.deconstructed[i]
             l_arg = self.mapping[l_hash]
             r_arg = other.mapping[r_hash]
             if isinstance(l_arg, Singleton.DSL):
+                if isinstance(r_arg, _Argument.Placeholder):
+                    r_arg = Singleton.DSL(r_arg.examples, -1)
                 if l_arg != r_arg:
                     choicleton = Choicleton.Placeholder(l_arg, r_arg, id_provider)
                     self.mapping[l_hash] = choicleton
@@ -94,6 +104,14 @@ class DslJAST(JAST):
             elif isinstance(l_arg, Choicleton.Placeholder):
                 l_arg.add_choice(r_arg)
                 return l_arg.choices
+
+    @property
+    def placeholders(self):
+        return [
+            arg
+            for arg in self.mapping.values()
+            if isinstance(arg, _Argument.Placeholder)
+        ]
 
     @property
     def nldsl_code_choice(self) -> str:
@@ -144,11 +162,24 @@ class DslJAST(JAST):
     @property
     def nldsl_dsl(self) -> str:
         result = []
-        for h in self.deconstructed:
+        list_hack = None
+        for i, h in enumerate(self.deconstructed):
             arg = self.mapping[h]
             if isinstance(arg, _Argument.Placeholder):
-                result.append(arg.nldsl_dsl)
+                if isinstance(arg, Listleton.Placeholder):
+                    if i < len(self.deconstructed) - 1:
+                        list_hack = arg.nldsl_dsl
+                    else:
+                        result.append(arg.nldsl_dsl)
+                elif list_hack != None and isinstance(arg, Choicleton.Placeholder):
+                    hack = f"{list_hack[:-1]} {arg.nldsl_dsl}]"
+                    result.append(hack)
+                else:
+                    result.append(arg.nldsl_dsl)
             else:
+                if list_hack != None:
+                    result.append(list_hack)
+                    list_hack = None
                 result.append(str(arg))
         return " ".join(result)
 

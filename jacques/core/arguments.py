@@ -43,6 +43,10 @@ class _Argument(ABC):
             ...
 
         def __eq__(self, __o: object) -> bool:
+            if isinstance(__o, str):
+                return self.value == __o
+            elif isinstance(__o, _Argument.Placeholder):
+                return self.value == __o.examples
             return self.value == __o.value
 
     class Placeholder(ABC, AST):
@@ -54,10 +58,11 @@ class _Argument(ABC):
             )
             return factory.__getattribute__(generator_name)
 
-        def __init__(self, id_factory: IdProvider, examples):
+        def __init__(self, id_factory: IdProvider, examples, placeholding_for: ast.AST):
             id_generator = self._id_generator_ref(id_factory)
             self.id = next(id_generator)
             self.examples = examples
+            self.placeholding_for = placeholding_for
 
         @property
         def shorthand(self):
@@ -123,6 +128,8 @@ class Singleton(_Argument):
             return str(self.value)
 
         def relaxed_equal(self, other: str | int | float) -> bool:
+            if isinstance(other, list):
+                return Listleton.DSL([self], self.index_in_parent).relaxed_equal(other)
             return self.pure == other or self.value == other
 
     class Placeholder(_Argument.Placeholder):
@@ -157,7 +164,7 @@ class Choicleton(Singleton):
 
         @property
         def nldsl_grammar_mod(self) -> str:
-            return self.nldsl_dsl + f" {{{', '.join(self.choices)}}}\n"
+            return self.nldsl_dsl[1:] + f" := {{ {', '.join(self.choices)} }}\n"
 
 
 class Listleton(_Argument):

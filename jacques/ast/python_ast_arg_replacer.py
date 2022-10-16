@@ -18,47 +18,55 @@ class ArgumentReplacer(NodeTransformer):
     def _match(self, value) -> bool:
         return self.dsl_arg.relaxed_equal(value)
 
-    def _placeholder(self, value) -> _Argument.Placeholder:
+    def _placeholder(self, value, placeholding_for) -> _Argument.Placeholder:
         if isinstance(value, list):
             if not self.placeholder:
-                self.placeholder = Listleton.Placeholder(self.id_provider, value)
+                self.placeholder = Listleton.Placeholder(
+                    self.id_provider, value, placeholding_for
+                )
         else:
             if not self.placeholder:
-                self.placeholder = Singleton.Placeholder(self.id_provider, value)
+                self.placeholder = Singleton.Placeholder(
+                    self.id_provider, value, placeholding_for
+                )
         return self.placeholder
 
-    def _operaton_placeholder(self, value):
+    def _operaton_placeholder(self, value, placeholding_for) -> Operaton.Placeholder:
         if not self.placeholder:
-            self.placeholder = Operaton.Placeholder(self.id_provider, value)
+            self.placeholder = Operaton.Placeholder(
+                self.id_provider, value, placeholding_for
+            )
         return self.placeholder
 
     def visit_Constant(self, node: ast.Constant) -> Any:
         if self._match(node.value):
-            return self._placeholder(node.value)
+            return self._placeholder(node.value, node)
         return super().generic_visit(node)
 
     def visit_Name(self, node: ast.Name) -> Any:
         if self._match(node.id):
-            return self._placeholder(node.id)
+            return self._placeholder(node.id, node)
         return super().generic_visit(node)
 
     def visit_alias(self, node: ast.alias) -> Any:
         if self._match(node.name):
-            return self._placeholder(node.name)
+            return self._placeholder(node.name, node)
         return super().generic_visit(node)
 
     def visit_Compare(self, node: ast.Compare) -> Any:
         op = unparse_comparator(node.ops[0])
         if self._match([node.left.value, op, node.comparators[0].value]):
             return self._operaton_placeholder(
-                [node.left.value, op, node.comparators[0].value]
+                [node.left.value, op, node.comparators[0].value], node
             )
         return super().generic_visit(node)
 
     def visit_BinOp(self, node: ast.BinOp) -> Any:
         op = unparse_operation(node.op)
         if self._match([node.left.value, op, node.right.value]):
-            return self._operaton_placeholder([node.left.value, op, node.right.value])
+            return self._operaton_placeholder(
+                [node.left.value, op, node.right.value], node
+            )
         return super().generic_visit(node)
 
     def visit_List(self, node: ast.List) -> Any:
@@ -71,5 +79,5 @@ class ArgumentReplacer(NodeTransformer):
             else:
                 preprocess.append(each)
         if self._match(preprocess):
-            return self._placeholder(preprocess)
+            return self._placeholder(preprocess, node)
         return super().generic_visit(node)

@@ -11,7 +11,7 @@ from jacques.core.arguments import (
     Singleton,
     ListIndex,
 )
-from ast import _Precedence
+from ast import _Precedence, NodeVisitor, iter_fields
 
 
 def unparse_comparator(comparator: ast.cmpop) -> str:
@@ -185,3 +185,33 @@ class ToFunctionUnparser(ast._Unparser):
             self.interleave(
                 lambda: self.write(", "), write_item, zip(node.keys, node.values)
             )
+
+
+class MissingArgumentFixer(NodeVisitor):
+    def __init__(self, arguments: List[_Argument.DSL | _Argument.Placeholder]) -> None:
+        self.arguments = [arg.__repr__() for arg in arguments]
+        super().__init__()
+
+    def visit(self, node: ast.AST) -> ast.AST:
+        for field, value in iter_fields(node):
+            if (
+                isinstance(value, _Argument.Placeholder)
+                and value.__repr__() not in self.arguments
+            ):
+                node.__setattr__(field, value.placeholding_for)
+            elif isinstance(value, list):
+                for i, item in enumerate(value):
+                    if (
+                        isinstance(item, _Argument.Placeholder)
+                        and item.__repr__() not in self.arguments
+                    ):
+                        value[i] = item.placeholding_for
+                    elif isinstance(item, ast.AST):
+                        self.visit(item)
+            elif isinstance(value, ast.AST):
+                self.visit(value)
+
+    def generic_visit(self, node):
+        if isinstance(node, Pipe):
+            return None
+        return super().generic_visit(node)

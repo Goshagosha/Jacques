@@ -52,7 +52,6 @@ class RuleSynthesizer(JacquesMember):
                 dsl_jast.mapping[hash] = placeholder
 
         return Rule(
-            code_tree=code_ast,
             dsl_jast=dsl_jast,
             code_jast=code_jast,
             id_provider=id_provider,
