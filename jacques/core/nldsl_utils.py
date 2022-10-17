@@ -2,7 +2,7 @@ from typing import Callable
 from nldsl import grammar
 from nldsl.pandas_extension import PandasExpressionRule, ExpressionRule
 
-from jacques.core.rule import Rule
+from jacques.core.rule import OverridenRule, Rule
 from jacques.utils import indent, sanitize_whitespace_and_symbols, dict_to_string
 from nldsl.core.utils import list_to_string
 from typing import List
@@ -40,7 +40,10 @@ def _grammar(rule: Rule) -> str:
 
 def generate_function(rule: Rule) -> Callable:
     sanitized_function_name = sanitize_whitespace_and_symbols(rule.name)
-    function_code = f"@grammar(expr=ExpressionRule)\ndef {sanitized_function_name}(pipe, args):\n{indent(_grammar(rule))}\n{indent(rule.nldsl_code)}"
+    if isinstance(rule, Rule):
+        function_code = f"@grammar(expr=ExpressionRule)\ndef {sanitized_function_name}(pipe, args):\n{indent(_grammar(rule))}\n{indent(rule.nldsl_code)}"
+    elif isinstance(rule, OverridenRule):
+        function_code = f"@grammar(expr=ExpressionRule)\ndef {sanitized_function_name}(pipe, args):\n{indent(rule.grammar)}\n{indent(rule.code)}"
     context = _sandbox_context()
     exec(function_code, context)
     function = context[sanitized_function_name]

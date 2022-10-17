@@ -65,6 +65,7 @@ class _ExampleMatrix:
             self._write_partition_into_matrix(root_partition)
         self._load_hypothetical_pipe_nodes()
         self._update_with_rules()
+        pass
 
     def _load_hypothetical_pipe_nodes(self):
         for i in range(1, self.y):

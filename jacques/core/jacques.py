@@ -5,7 +5,7 @@ from jacques.ast.jacques_ast import CodeJAST, DslJAST
 from jacques.core.nldsl_utils import generate_function, generate_init_statement
 from jacques.ast.parsers.dsl_parser import DslParser
 from jacques.ast.parsers.python_parser import PythonParser
-from jacques.core.rule import ConditionalRule, Rule
+from jacques.core.rule import ConditionalRule, OverridenRule, Rule
 from jacques.core.rule_synthesizer import RuleSynthesizer
 from jacques.core.example import Example, _ExampleMatrix
 from jacques.utils import sanitize
@@ -60,18 +60,22 @@ class Jacques:
             self._register_rule(rule)
         return len(rules) > 0
 
-    def _add_to_ruleset(self, rule: Rule):
+    def _add_to_ruleset(self, rule: Rule | OverridenRule):
         if rule.name in self.ruleset:
-            old_rule = self.ruleset[rule.name]
-            if isinstance(old_rule, Rule):
-                self.ruleset[rule.name] = ConditionalRule(old_rule, rule)
+            if isinstance(rule, OverridenRule):
+                self.ruleset[rule.name] = rule
+                logger.info(f"Overriden rule: {self.ruleset[rule.name]}")
             else:
-                old_rule.add_option(rule)
-            logger.info(f"Updated rule: {self.ruleset[rule.name]}")
+                old_rule = self.ruleset[rule.name]
+                if isinstance(old_rule, Rule):
+                    self.ruleset[rule.name] = ConditionalRule(old_rule, rule)
+                else:
+                    old_rule.add_option(rule)
+                logger.info(f"Updated rule: {self.ruleset[rule.name]}")
         else:
             self.ruleset[rule.name] = rule
 
-    def _register_rule(self, rule: Rule):
+    def _register_rule(self, rule: Rule | OverridenRule):
         name = rule.name
         self._add_to_ruleset(rule)
         function = generate_function(self.ruleset[name])
@@ -97,8 +101,8 @@ class Jacques:
         func = generate_init_statement(dsl_string, code_string)
         self.code_generator.register_function(func, "initialize")
 
-    def update_rule(self, rule: Rule):
-        raise NotImplementedError
+    def override_rule(self, rule: OverridenRule):
+        self._add_to_ruleset(rule)
 
     def reset(self):
         self.encountered_objects = []

@@ -5,8 +5,8 @@ from jacques.world_knowledge import *
 j = Jacques()
 
 # j.push_examples_from_file("training_examples/spark/easy.py")
-j.push_examples_from_file("training_examples/pandas/easy.py")
-# j.push_examples_from_file("training_examples/pandas/advanced.py")
+# j.push_examples_from_file("training_examples/pandas/easy.py")
+j.push_examples_from_file("training_examples/pandas/advanced.py")
 
 
 #########################################################

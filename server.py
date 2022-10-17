@@ -2,7 +2,7 @@ from typing import List
 from fastapi import FastAPI
 from pydantic import BaseModel, parse_obj_as
 from loguru import logger
-from jacques.core.rule import Rule, RuleModel
+from jacques.core.rule import OverridenRule, Rule, RuleModel
 from jacques.core.jacques import Jacques
 import uvicorn
 import argparse
@@ -36,16 +36,24 @@ async def push_example(example: ExampleModel):
     return Status(id=id, status="ok")
 
 
-@app.post("/update_rule", response_model=Status)
-async def update_rule(rule: RuleModel):
-    logger.info(f"Server received a rule update: {rule}")
-    id = rule.id
+@app.get(
+    "/get_rule_source/{rule_name}", response_model=OverridenRule.OverridenRuleModel
+)
+async def get_rule_source(rule_name: str):
+    logger.info(f"Server received a request for rule source: {rule_name}")
+    rule = jacques.ruleset[rule_name]
+    return rule.to_overriden_rule_model()
+
+
+@app.post("/override_rule", response_model=Status)
+async def override(rule: OverridenRule.OverridenRuleModel):
+    logger.info(f"Server received a rule override: {rule}")
     try:
-        jacques.update_rule(Rule.from_model(rule))
+        jacques.override_rule(OverridenRule.from_model(rule))
     except Exception as e:
-        logger.error(f"Rule update failed: {e}")
-        return Status(id=id, status="warning")
-    return Status(id=id, status="ok")
+        logger.error(f"Rule override failed: {e}")
+        return Status(id=rule.name, status="warning")
+    return Status(id=rule.name, status="ok")
 
 
 @app.get("/process_all_examples", response_model=Status)

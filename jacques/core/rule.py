@@ -1,6 +1,5 @@
 from __future__ import annotations
 import ast
-import re
 from typing import TYPE_CHECKING, Dict
 from jacques.ast.python_ast_utils import (
     JacquesUnparser,
@@ -8,7 +7,8 @@ from jacques.ast.python_ast_utils import (
     ToFunctionUnparser,
 )
 from jacques.ast.jacques_ast_utils import *
-from jacques.core.arguments import _Argument, Choicleton
+from jacques.core.arguments import _Argument, Choicleton, IdProvider
+from jacques.core.nldsl_utils import _grammar
 from jacques.world_knowledge import *
 from pydantic import BaseModel
 from loguru import logger
@@ -17,11 +17,24 @@ if TYPE_CHECKING:
     from jacques.ast.jacques_ast import DslJAST
 
 
-class RuleModel(BaseModel):
-    id: int
-    name: str
-    dsl: str
-    code: str
+class OverridenRule:
+    def __init__(self, name, grammar, code) -> None:
+        self.name = name
+        self.grammar = grammar
+        self.code = code
+
+    class OverridenRuleModel(BaseModel):
+        name: str
+        grammar: str
+        code: str
+
+    def to_overriden_rule_model(self) -> OverridenRuleModel:
+        return OverridenRule.OverridenRuleModel(
+            name=self.name, grammar=self.grammar, code=self.code
+        )
+
+    def from_model(self, model: OverridenRuleModel) -> OverridenRule:
+        return OverridenRule(model.name, model.grammar, model.code)
 
 
 class Rule:
@@ -35,25 +48,16 @@ class Rule:
         self.code_jast = code_jast
         self.id_provider = id_provider
 
+    def to_overriden_rule_model(self):
+        grammar = _grammar(self)
+        code = self.nldsl_code
+        return OverridenRule.OverridenRuleModel(
+            name=self.name, grammar=grammar, code=code
+        )
+
     @property
     def code_tree(self) -> ast.AST:
         return self.code_jast.code_ast
-
-    def to_model(self) -> RuleModel:
-        return RuleModel(
-            id=self.id,
-            name=self.name,
-            dsl=self.dsl_source,
-            code=self.code_source,
-        )
-
-    def from_model(self, model: RuleModel) -> Rule:
-        raise NotImplementedError
-        self.id = model.id
-        self.name = model.name
-        self.dsl_source = model.dsl
-        self.code_source = model.code
-        return self
 
     @property
     def name(self) -> str:
