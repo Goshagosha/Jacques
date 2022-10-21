@@ -5,7 +5,8 @@ from nldsl.pandas_extension import PandasExpressionRule, ExpressionRule
 from jacques.core.rule import OverridenRule, Rule
 from jacques.utils import indent, sanitize_whitespace_and_symbols, dict_to_string
 from nldsl.core.utils import list_to_string
-from typing import List
+from typing import List, TYPE_CHECKING
+from jacques.core.nldsl_utils._grammar import _grammar
 
 
 _sandbox_context_preset = {
@@ -32,10 +33,6 @@ def generate_init_statement(dsl_string: str, code_string: str) -> Callable:
 
 def _sandbox_context() -> dict:
     return _sandbox_context_preset.copy()
-
-
-def _grammar(rule: Rule) -> str:
-    return f'"""\nGrammar:\n\t{rule.nldsl_dsl}\n{indent(rule.nldsl_grammar_mods)}\n"""'
 
 
 def generate_function(rule: Rule) -> Callable:

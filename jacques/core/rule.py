@@ -8,33 +8,42 @@ from jacques.ast.python_ast_utils import (
 )
 from jacques.ast.jacques_ast_utils import *
 from jacques.core.arguments import _Argument, Choicleton, IdProvider
-from jacques.core.nldsl_utils import _grammar
+from jacques.core.nldsl_utils._grammar import _grammar
 from jacques.world_knowledge import *
 from pydantic import BaseModel
 from loguru import logger
+from uuid import uuid4 as uuid
 
 if TYPE_CHECKING:
     from jacques.ast.jacques_ast import DslJAST
 
+class RuleModel(BaseModel):
+    name: str
+    dsl: str
+    code: str
+    id: str
 
 class OverridenRule:
-    def __init__(self, name, grammar, code) -> None:
+    def __init__(self, name, grammar, code, id: str = None) -> None:
         self.name = name
         self.grammar = grammar
         self.code = code
+        if not id:
+            self.id = uuid().hex
 
     class OverridenRuleModel(BaseModel):
+        id: str
         name: str
         grammar: str
         code: str
 
     def to_overriden_rule_model(self) -> OverridenRuleModel:
-        return OverridenRule.OverridenRuleModel(
+        return OverridenRule.OverridenRuleModel(id=self.id,
             name=self.name, grammar=self.grammar, code=self.code
         )
 
     def from_model(self, model: OverridenRuleModel) -> OverridenRule:
-        return OverridenRule(model.name, model.grammar, model.code)
+        return OverridenRule(model.name, model.grammar, model.code, model.id)
 
 
 class Rule:
@@ -43,16 +52,22 @@ class Rule:
         dsl_jast: DslJAST,
         code_jast: CodeJAST,
         id_provider: IdProvider,
+        id: str = None
     ) -> None:
         self.dsl_jast = dsl_jast
         self.code_jast = code_jast
         self.id_provider = id_provider
+        if not id:
+            self.id = uuid().hex
 
+    def to_model(self) -> RuleModel:
+        return RuleModel(name=self.name, dsl=self.dsl_source, code=self.code_source, id=self.id)
+        
     def to_overriden_rule_model(self):
         grammar = _grammar(self)
         code = self.nldsl_code
         return OverridenRule.OverridenRuleModel(
-            name=self.name, grammar=grammar, code=code
+            name=self.name, grammar=grammar, code=code, id=self.id
         )
 
     @property

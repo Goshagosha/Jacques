@@ -37,11 +37,11 @@ async def push_example(example: ExampleModel):
 
 
 @app.get(
-    "/get_rule_source/{rule_name}", response_model=OverridenRule.OverridenRuleModel
+    "/get_rule_source/{rule_id}", response_model=OverridenRule.OverridenRuleModel
 )
-async def get_rule_source(rule_name: str):
-    logger.info(f"Server received a request for rule source: {rule_name}")
-    rule = jacques.ruleset[rule_name]
+async def get_rule_source(rule_id: str):
+    logger.info(f"Server received a request for rule source: {rule_id}")
+    rule = jacques.get_rule_by_id(rule_id)
     return rule.to_overriden_rule_model()
 
 
@@ -52,8 +52,8 @@ async def override(rule: OverridenRule.OverridenRuleModel):
         jacques.override_rule(OverridenRule.from_model(rule))
     except Exception as e:
         logger.error(f"Rule override failed: {e}")
-        return Status(id=rule.name, status="warning")
-    return Status(id=rule.name, status="ok")
+        return Status(id=rule.id, status="warning")
+    return Status(id=rule.id, status="ok")
 
 
 @app.get("/process_all_examples", response_model=Status)

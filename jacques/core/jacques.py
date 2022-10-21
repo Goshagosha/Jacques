@@ -2,7 +2,7 @@ from __future__ import annotations
 from lib2to3.pgen2.token import NEWLINE
 from typing import Dict, List, Tuple
 from jacques.ast.jacques_ast import CodeJAST, DslJAST
-from jacques.core.nldsl_utils import generate_function, generate_init_statement
+from jacques.core.nldsl_utils.nldsl_utils import generate_function, generate_init_statement
 from jacques.ast.parsers.dsl_parser import DslParser
 from jacques.ast.parsers.python_parser import PythonParser
 from jacques.core.rule import ConditionalRule, OverridenRule, Rule
@@ -59,6 +59,9 @@ class Jacques:
         for rule in rules:
             self._register_rule(rule)
         return len(rules) > 0
+
+    def get_rule_by_id(self, id: str) -> Rule:
+        return self.ruleset.values().filter(lambda rule: rule.id == id)[0]
 
     def _add_to_ruleset(self, rule: Rule | OverridenRule):
         if rule.name in self.ruleset:
