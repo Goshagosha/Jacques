@@ -1,8 +1,8 @@
 from typing import List
 from fastapi import FastAPI
-from pydantic import BaseModel, parse_obj_as
+from pydantic import BaseModel
 from loguru import logger
-from jacques.core.rule import OverridenRule, Rule, RuleModel
+from jacques.core.rule import OverridenRule, RuleModel
 from jacques.core.jacques import Jacques
 import uvicorn
 import argparse
@@ -18,6 +18,14 @@ class ExampleModel(BaseModel):
 class Status(BaseModel):
     id: str
     status: str
+
+
+class TranslationRequest(BaseModel):
+    dsl: str
+
+
+class TranslationResponse(BaseModel):
+    result: str
 
 
 app = FastAPI()
@@ -36,13 +44,18 @@ async def push_example(example: ExampleModel):
     return Status(id=id, status="ok")
 
 
-@app.get(
-    "/get_rule_source/{rule_id}", response_model=OverridenRule.OverridenRuleModel
-)
+@app.get("/get_rule_source/{rule_id}", response_model=OverridenRule.OverridenRuleModel)
 async def get_rule_source(rule_id: str):
     logger.info(f"Server received a request for rule source: {rule_id}")
-    rule = jacques.get_rule_by_id(rule_id)
+    rule = jacques.ruleset[rule_id]
     return rule.to_overriden_rule_model()
+
+
+@app.post("/translate", response_model=TranslationResponse)
+async def translate(request: TranslationRequest):
+    logger.info(f"Server received a translation request: {request}")
+    result = jacques.code_generator(request.dsl)[0]
+    return TranslationResponse(result=result)
 
 
 @app.post("/override_rule", response_model=Status)
@@ -63,7 +76,9 @@ async def process_all_examples():
 
 
 @app.get(
-    "/get_rules", response_model=List[RuleModel], response_model_exclude_unset=True
+    "/get_rules",
+    response_model=List[RuleModel | OverridenRule.OverridenRuleModel],
+    response_model_exclude_unset=True,
 )
 async def get_rules():
     rules = [rule.to_model() for rule in jacques.ruleset.values()]
@@ -71,7 +86,7 @@ async def get_rules():
 
 
 @app.get("/reset", response_model=Status)
-async def get_rules():
+async def reset():
     jacques.reset()
     return Status(id=-1, status="ok")
 

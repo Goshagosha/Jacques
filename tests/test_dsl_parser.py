@@ -16,5 +16,4 @@ def test_WithLists():
     dsl = "no_of_something = create dataframe from data with header 'Confirmed', 'Country/Region', 'Active'"
     jast = j.dsl_parser.parse(dsl)
     assert jast.jacques_dsl() == dsl
-    assert len(jast.mapping) == 9
     assert len(jast.deconstructed) == 9

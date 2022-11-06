@@ -11,7 +11,7 @@ spark = SparkSession.builder.appName("Spark Example").getOrCreate()
 data = spark.read.format('csv').option("header", True).load('covid_20_data.csv') 
 
 # create_dataframe & apply min & show_schema & sort_by ... descending
-## other_df = create dataframe from data with header 'Country/Region', 'Confirmed' | apply min on 'Confirmed' as 'Min confirmed'| sort by 'Min confirmed' descending | show schema 
+## other_df = create dataframe from data with header 'Country/Region', 'Confirmed' | apply min on 'Confirmed' as 'Min confirmed' | sort by 'Min confirmed' descending | show schema 
 other_df = spark.createDataFrame(data, schema=['Country/Region', 'Confirmed']).agg(min('Confirmed').alias('Min confirmed')).sort(['Min confirmed'], ascending=[False]).printSchema() 
 
 # select_rows & select_columns & sort_by ... ascending & save_to csv

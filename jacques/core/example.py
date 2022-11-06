@@ -2,12 +2,14 @@ from __future__ import annotations
 import ast
 import re
 from typing import TYPE_CHECKING
+from loguru import logger
 import numpy as np
 import pandas as pd
 from jacques.ast.jacques_ast_utils import (
     SubtreeBuilder,
     extract_subtree_by_ref_as_ref_list,
 )
+from jacques.ast.python_ast_heur_comparer import Comparer
 from jacques.core.jacques_member import JacquesMember
 from jacques.core.rule import ConditionalRule, Rule
 from jacques.utils import is_superstring
@@ -63,9 +65,48 @@ class _ExampleMatrix:
         root_partitions = self._root_partitions(code_header[0], self.y - 1)
         for root_partition in root_partitions:
             self._write_partition_into_matrix(root_partition)
+        logger.debug(f"Example matrix:\n{self}")
+        if self.jacques.heuristic_on:
+            self._heuristics()
+            logger.debug(f"Example matrix after heuristic:\n{self}")
         self._load_hypothetical_pipe_nodes()
         self._update_with_rules()
         pass
+
+    def _heuristics(self) -> None:
+        heuristic_matrix = np.zeros((self.y, self.x), dtype=int)
+        for i in range(self.x):
+            heuristic_column = [0] * self.y
+            code_jast = self.code_header[i]
+            for j in range(self.y):
+                dsl_jast = self.dsl_header[j]
+                for arg in dsl_jast.deconstructed:
+                    matches = Comparer(arg).compare(code_jast.code_ast)
+                    heuristic_column[j] += matches
+            heuristic_matrix[:, i] = heuristic_column
+        logger.debug(f"Heuristic matrix compared:\n{heuristic_matrix}")
+        for i in range(self.x):
+            code_jast = self.code_header[i]
+            for child in code_jast.children:
+                k = self.code_header.index(child)
+                heuristic_matrix[:, i] -= heuristic_matrix[:, k]
+        logger.debug(f"Heuristic folded:\n{heuristic_matrix}")
+        for i in range(self.x):
+            if max(heuristic_matrix[:, i]) == 0:
+                continue
+            heuristic_matrix[:, i] = [
+                1 if heuristic_matrix[j, i] == max(heuristic_matrix[:, i]) else 0
+                for j in range(self.y)
+            ]
+        logger.debug(f"Heuristic regularized:\n{heuristic_matrix}")
+        for i in range(self.y):
+            for j in range(self.x):
+                if self.m[i, j] == 0:
+                    heuristic_matrix[i, j] = 0
+        for i in range(self.y):
+            if max(heuristic_matrix[:, i]) == 0:
+                heuristic_matrix[:, i] = self.m[:, i]
+        self.m = heuristic_matrix
 
     def _load_hypothetical_pipe_nodes(self):
         for i in range(1, self.y):
@@ -128,12 +169,6 @@ class _ExampleMatrix:
                     np.ma.array(self.code_header, mask=m).compressed()
                 )
 
-                generated_code = self.jacques.code_generator(
-                    EVAL_PIPE_PREFIX + " " + dsl_jast.dsl_string
-                )
-                if len(generated_code) != 1:
-                    continue
-                generated_code = generated_code[0]
                 # Now we check every legal node for the match:
                 for code_jast in code_header_legal_subset:
                     if isinstance(rule, ConditionalRule):
@@ -141,8 +176,8 @@ class _ExampleMatrix:
                             matched_code_jast_list = extract_subtree_by_ref_as_ref_list(
                                 code_jast, rule_code_jast
                             )
-                            if matched_code_jast_list and is_superstring(
-                                code_jast.source_code, generated_code
+                            if matched_code_jast_list and re.match(
+                                rule.regex_code, code_jast.source_code
                             ):
                                 self.m[i, :] = 0
                                 for code_jast in matched_code_jast_list:
@@ -152,8 +187,8 @@ class _ExampleMatrix:
                         matched_code_jast_list = extract_subtree_by_ref_as_ref_list(
                             code_jast, rule.code_jast
                         )
-                        if matched_code_jast_list and is_superstring(
-                            code_jast.source_code, generated_code
+                        if matched_code_jast_list and re.match(
+                            rule.regex_code, code_jast.source_code
                         ):
                             self.m[i, :] = 0
                             for code_jast in matched_code_jast_list:

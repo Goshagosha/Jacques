@@ -1,10 +1,7 @@
-from abc import ABC, abstractmethod, abstractproperty
+from abc import ABC, abstractmethod
 from ast import AST
 import ast
-from calendar import c
-import re
-from tokenize import Single
-from typing import Any, List, Tuple
+from typing import Any
 from jacques.utils import id_generator, is_float
 
 
@@ -153,6 +150,7 @@ class Choicleton(Singleton):
             id_generator = self._id_generator_ref(id_provider)
             self.id = next(id_generator)
             self.choices = [l_arg.pure, r_arg.pure]
+            self.linked = False
 
         def add_choice(self, choice: Singleton.Placeholder):
             self.examples.append(choice.value)
@@ -185,16 +183,29 @@ class Listleton(_Argument):
                     return False
                 return self.value[0].relaxed_equal(other)
             else:
+                return False
                 raise NotImplementedError
 
     class Placeholder(_Argument.Placeholder):
         base_shorthand = "lst"
 
+        def __init__(self, id_factory: IdProvider, examples, placeholding_for: ast.AST):
+            super().__init__(id_factory, examples, placeholding_for)
+            self.linked_choicleton = None
+
+        def link_choicleton(self, choicleton: Choicleton.Placeholder):
+            choicleton.linked = True
+            self.linked_choicleton = choicleton
+
         @property
         def nldsl_code_mod(self):
-            return (
+            result = ""
+            if self.linked_choicleton is not None:
+                result += f'args["{self.shorthand}"], args["{self.linked_choicleton.shorthand}"] = zip(*args["{self.shorthand}"])\n'
+            result += (
                 f'args["{self.shorthand}"] = list_to_string(args["{self.shorthand}"])'
             )
+            return result
 
         @property
         def nldsl_code(self) -> str:
@@ -202,7 +213,10 @@ class Listleton(_Argument):
 
         @property
         def nldsl_dsl(self):
-            return f"${self.shorthand}[$i]"
+            result = f"${self.shorthand}[$i]"
+            if self.linked_choicleton is not None:
+                result = result[:-1] + f" {self.linked_choicleton.nldsl_dsl}]"
+            return result
 
         def __str__(self) -> str:
             return f"{self.__repr__()}"
@@ -221,6 +235,8 @@ class Operaton(_Argument):
 
         def relaxed_equal(self, vals: list) -> bool:
             if not isinstance(vals, list):
+                return False
+            if len(vals) < 3:
                 return False
             lhs = vals[0]
             op = vals[1]
@@ -300,3 +316,7 @@ class Pipe(AST):
     @property
     def nldsl_code(self) -> str:
         return f"{{{self.base_shorthand}}}"
+
+    @property
+    def regex(self):
+        return "(.*)"

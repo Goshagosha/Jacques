@@ -1,11 +1,10 @@
 from __future__ import annotations
-import ast
 from typing import TYPE_CHECKING
-from jacques.ast.python_ast_utils import (
-    ArgumentExtractor,
-    ListIndex,
+from jacques.core.arguments import (
+    Choicleton,
+    IdProvider,
+    Listleton,
 )
-from jacques.core.arguments import _Argument, Dictleton, IdProvider, Singleton
 from jacques.utils import key_by_value
 from jacques.ast.jacques_ast_utils import *
 from jacques.core.jacques_member import JacquesMember
@@ -43,13 +42,22 @@ class RuleSynthesizer(JacquesMember):
         logger.debug(f"Code jast: {code_jast.source_code}")
         code_ast = CodeExtractor(self.jacques).extract(code_jast, pipe_nodes)
         id_provider = IdProvider()
-        for hash in dsl_jast.mapping:
-            dsl_arg = dsl_jast.mapping[hash]
+        for i, dsl_arg in enumerate(dsl_jast.deconstructed):
             code_ast, placeholder = ArgumentReplacer(dsl_arg, id_provider).replace(
                 code_ast
             )
+            code_jast.code_ast = code_ast
             if placeholder:
-                dsl_jast.mapping[hash] = placeholder
+                dsl_jast.deconstructed[i] = placeholder
+                if isinstance(placeholder, Choicleton.Placeholder):
+                    previous = None
+                    try:
+                        if i > 1:
+                            previous = dsl_jast.deconstructed[i - 1]
+                    except:
+                        pass
+                    if isinstance(previous, Listleton.Placeholder):
+                        previous.link_choicleton(placeholder)
 
         return Rule(
             dsl_jast=dsl_jast,

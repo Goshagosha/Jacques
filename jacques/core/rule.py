@@ -1,5 +1,6 @@
 from __future__ import annotations
 import ast
+from functools import reduce
 from typing import TYPE_CHECKING, Dict
 from jacques.ast.python_ast_utils import (
     JacquesUnparser,
@@ -17,33 +18,40 @@ from uuid import uuid4 as uuid
 if TYPE_CHECKING:
     from jacques.ast.jacques_ast import DslJAST
 
+
 class RuleModel(BaseModel):
     name: str
     dsl: str
     code: str
     id: str
 
+
 class OverridenRule:
-    def __init__(self, name, grammar, code, id: str = None) -> None:
+    def __init__(self, name, dsl, code, id: str = None) -> None:
         self.name = name
-        self.grammar = grammar
+        self.dsl = dsl
         self.code = code
-        if not id:
-            self.id = uuid().hex
+        self.id = id if id else uuid().hex
 
     class OverridenRuleModel(BaseModel):
         id: str
         name: str
-        grammar: str
+        dsl: str
         code: str
 
+    def to_model(self) -> OverridenRuleModel:
+        return self.to_overriden_rule_model()
+
     def to_overriden_rule_model(self) -> OverridenRuleModel:
-        return OverridenRule.OverridenRuleModel(id=self.id,
-            name=self.name, grammar=self.grammar, code=self.code
+        return OverridenRule.OverridenRuleModel(
+            id=self.id, name=self.name, dsl=self.dsl, code=self.code
         )
 
-    def from_model(self, model: OverridenRuleModel) -> OverridenRule:
-        return OverridenRule(model.name, model.grammar, model.code, model.id)
+    def from_model(model: OverridenRuleModel) -> OverridenRule:
+        return OverridenRule(model.name, model.dsl, model.code, model.id)
+
+    def __str__(self):
+        return f"{self.__class__}\n\t{self.dsl}\n\t{self.code}"
 
 
 class Rule:
@@ -52,22 +60,25 @@ class Rule:
         dsl_jast: DslJAST,
         code_jast: CodeJAST,
         id_provider: IdProvider,
-        id: str = None
+        id: str = None,
     ) -> None:
         self.dsl_jast = dsl_jast
         self.code_jast = code_jast
         self.id_provider = id_provider
-        if not id:
-            self.id = uuid().hex
+        self.id = id if id else uuid().hex
 
     def to_model(self) -> RuleModel:
-        return RuleModel(name=self.name, dsl=self.dsl_source, code=self.code_source, id=self.id)
-        
+        return RuleModel(
+            name=self.name, dsl=self.dsl_source, code=self.code_source, id=self.id
+        )
+
     def to_overriden_rule_model(self):
-        grammar = _grammar(self)
+        grammar = f"{self.nldsl_dsl}\n{self.nldsl_grammar_mods}"
         code = self.nldsl_code
+        if code.startswith(NEWLINE):
+            code = code[len(NEWLINE) :]
         return OverridenRule.OverridenRuleModel(
-            name=self.name, grammar=grammar, code=code, id=self.id
+            name=self.name, dsl=grammar, code=code, id=self.id
         )
 
     @property
@@ -103,6 +114,10 @@ class Rule:
     def regex_dsl(self) -> str:
         return self.dsl_jast.regex
 
+    @property
+    def regex_code(self) -> str:
+        return self.code_jast.regex
+
     def __str__(self):
         return f"{self.__class__}\n\t{self.dsl_source}\n\t{self.code_source}"
 
@@ -137,6 +152,41 @@ class ConditionalRule(Rule):
         return self.dsl_jast.nldsl_dsl
 
     @property
+    def regex_code(self) -> str:
+        def splitter(s: str) -> List[str]:
+            result = []
+            next = ""
+            for c in s:
+                if c.isalpha():
+                    next += c
+                else:
+                    if next:
+                        result.append(next)
+                        next = ""
+                    result.append(c)
+            if next:
+                result.append(next)
+            return result
+
+        regexes_of_code = [
+            splitter(code_jast.regex) for code_jast in self.code_jasts.values()
+        ]
+
+        def compresser(accu, next):
+            REGEX_TOKEN = "REGEX_TOKEN"
+            result = []
+            for i, token in enumerate(accu):
+                if token == next[i]:
+                    result += [token]
+                else:
+                    result += [REGEX_TOKEN]
+            result = [x if x != REGEX_TOKEN else "(.*)" for x in result]
+            return result
+
+        reduced = reduce(compresser, regexes_of_code)
+        return "".join(reduced)
+
+    @property
     def code_trees(self) -> Dict[str | ast.AST]:
         return {choice: self.code_jasts[choice].code_ast for choice in self.code_jasts}
 
@@ -166,16 +216,19 @@ class ConditionalRule(Rule):
     @property
     def nldsl_code(self) -> str:
         sources = {}
+        accumulated_nldsl_code_mods = []
         for choice in self.code_trees:
             source, nldsl_code_mods = ToFunctionUnparser().to_function(
                 self.code_trees[choice]
             )
             sources[choice] = source
+            accumulated_nldsl_code_mods.extend(nldsl_code_mods)
+        accumulated_nldsl_code_mods = list(set(accumulated_nldsl_code_mods))
         source = NEWLINE
         for each in sources:
             source += f'{INDENT + NEWLINE}elif {self.nldsl_code_choice} == "{each}":{NEWLINE + INDENT}return f"{sources[each]}"'
         source = source[5:]
-        return f"{NEWLINE.join(nldsl_code_mods)}{NEWLINE}{source}"
+        return f"{NEWLINE.join(accumulated_nldsl_code_mods)}{NEWLINE}{source}"
 
     @property
     def code_source(self) -> str:

@@ -1,11 +1,9 @@
 from __future__ import annotations
-from abc import ABC, abstractmethod
 from ast import AST
 import re
 from typing import Dict, List
-from jacques.ast.python_ast_utils import JacquesUnparser
+from jacques.ast.python_ast_utils import JacquesRegexUnparser, JacquesUnparser
 
-from jacques.utils import id_generator
 from jacques.core.arguments import (
     _Argument,
     Choicleton,
@@ -75,12 +73,15 @@ class CodeJAST(JAST):
         new.inverse_depth = self.inverse_depth
         return new
 
+    @property
+    def regex(self):
+        return JacquesRegexUnparser().visit(self.code_ast)
+
 
 class DslJAST(JAST):
     def __init__(self):
         self.dsl_string: str = None
         self.deconstructed: list = None
-        self.mapping: Dict = None
         super().__init__()
 
     def merge(self, other: DslJAST, id_provider: IdProvider) -> List[str]:
@@ -88,51 +89,52 @@ class DslJAST(JAST):
         Returns:
             str: The choice keyword for new option
         """
-        for i in range(len(self.deconstructed)):
-
-            l_hash = self.deconstructed[i]
-            r_hash = other.deconstructed[i]
-            l_arg = self.mapping[l_hash]
-            r_arg = other.mapping[r_hash]
+        for i, l_arg in enumerate(self.deconstructed):
+            r_arg = other.deconstructed[i]
+            previous = None
+            try:
+                if i > 1:
+                    previous = self.deconstructed[i - 1]
+            except IndexError:
+                pass
             if isinstance(l_arg, Singleton.DSL):
                 if isinstance(r_arg, _Argument.Placeholder):
                     r_arg = Singleton.DSL(r_arg.examples, -1)
                 if l_arg != r_arg:
                     choicleton = Choicleton.Placeholder(l_arg, r_arg, id_provider)
-                    self.mapping[l_hash] = choicleton
-                    return self.mapping[l_hash].choices
+                    self.deconstructed[i] = choicleton
+                    if isinstance(previous, Listleton.Placeholder):
+                        previous.link_choicleton(choicleton)
+                    return self.deconstructed[i].choices
             elif isinstance(l_arg, Choicleton.Placeholder):
                 l_arg.add_choice(r_arg)
+                if isinstance(previous, Listleton.Placeholder):
+                    previous.link_choicleton(choicleton)
                 return l_arg.choices
 
     @property
     def placeholders(self):
         return [
-            arg
-            for arg in self.mapping.values()
-            if isinstance(arg, _Argument.Placeholder)
+            arg for arg in self.deconstructed if isinstance(arg, _Argument.Placeholder)
         ]
 
     @property
     def nldsl_code_choice(self) -> str:
-        for h in self.deconstructed:
-            arg = self.mapping[h]
+        for arg in self.deconstructed:
             if isinstance(arg, Choicleton.Placeholder):
                 return arg.nldsl_code_choice
 
     @property
     def jacques_dsl(self) -> str:
         result = []
-        for h in self.deconstructed:
-            arg = self.mapping[h]
+        for arg in self.deconstructed:
             result.append(str(arg))
         return " ".join(result)
 
     @property
     def name(self) -> str:
         result = []
-        for h in self.deconstructed:
-            arg = self.mapping[h]
+        for arg in self.deconstructed:
             if isinstance(arg, (_Argument.Placeholder, Pipe)):
                 break
             result.append(str(arg))
@@ -141,8 +143,7 @@ class DslJAST(JAST):
     @property
     def command(self) -> str:
         command = []
-        for h in self.deconstructed:
-            arg = self.mapping[h]
+        for arg in self.deconstructed:
             if isinstance(arg, _Argument.Placeholder):
                 pass
             else:
@@ -152,8 +153,7 @@ class DslJAST(JAST):
     @property
     def nldsl_grammar_mods(self) -> str:
         result = []
-        for h in self.deconstructed:
-            arg = self.mapping[h]
+        for arg in self.deconstructed:
             if isinstance(arg, _Argument.Placeholder):
                 if arg.nldsl_grammar_mod:
                     result.append(arg.nldsl_grammar_mod)
@@ -162,32 +162,20 @@ class DslJAST(JAST):
     @property
     def nldsl_dsl(self) -> str:
         result = []
-        list_hack = None
-        for i, h in enumerate(self.deconstructed):
-            arg = self.mapping[h]
+        for arg in self.deconstructed:
             if isinstance(arg, _Argument.Placeholder):
-                if isinstance(arg, Listleton.Placeholder):
-                    if i < len(self.deconstructed) - 1:
-                        list_hack = arg.nldsl_dsl
-                    else:
-                        result.append(arg.nldsl_dsl)
-                elif list_hack != None and isinstance(arg, Choicleton.Placeholder):
-                    hack = f"{list_hack[:-1]} {arg.nldsl_dsl}]"
-                    result.append(hack)
-                else:
-                    result.append(arg.nldsl_dsl)
+                if isinstance(arg, Choicleton.Placeholder):
+                    if arg.linked:
+                        continue
+                result.append(arg.nldsl_dsl)
             else:
-                if list_hack != None:
-                    result.append(list_hack)
-                    list_hack = None
                 result.append(str(arg))
         return " ".join(result)
 
     @property
     def regex(self) -> str:
         result = []
-        for h in self.deconstructed:
-            arg = self.mapping[h]
+        for arg in self.deconstructed:
             if isinstance(arg, _Argument.Placeholder):
                 result.append(arg.regex)
             else:

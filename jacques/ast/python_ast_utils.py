@@ -13,6 +13,8 @@ from jacques.core.arguments import (
 )
 from ast import _Precedence, NodeVisitor, iter_fields
 
+from jacques.world_knowledge import NEWLINE
+
 
 def unparse_comparator(comparator: ast.cmpop) -> str:
     CMPOPS = {
@@ -144,19 +146,49 @@ class JacquesUnparser(ast._Unparser):
             return super().generic_visit(node)
 
 
+class JacquesRegexUnparser(ast._Unparser):
+    REGEX_TOKEN = "REGEX_TOKEN"
+
+    def visit(self, node):
+        super().visit(node)
+        for i, each in enumerate(self._source):
+            if each == self.REGEX_TOKEN:
+                self._source[i] = "(.*)"
+            else:
+                self._source[i] = re.escape(each)
+        return "".join(self._source)
+
+    def generic_visit(self, node):
+        if isinstance(node, (Pipe, _Argument.Placeholder)):
+            self._source.append(self.REGEX_TOKEN)
+        else:
+            return super().generic_visit(node)
+
+
 class ToFunctionUnparser(ast._Unparser):
     def __init__(self) -> None:
         super().__init__()
         self.nldsl_code_mods = []
 
     def to_function(self, node: ast.AST) -> str:
-        return self.visit(node), self.nldsl_code_mods
+        result = self.visit(node)
+        self.sort_code_mods()
+        return result, self.nldsl_code_mods
+
+    def sort_code_mods(self):
+        result = []
+        for i in range(len(self.nldsl_code_mods)):
+            if "zip(*" in self.nldsl_code_mods[i]:
+                result.insert(0, self.nldsl_code_mods[i])
+            else:
+                result.append(self.nldsl_code_mods[i])
+        self.nldsl_code_mods = result
 
     def generic_visit(self, node):
         if isinstance(node, _Argument.Placeholder):
             self._source.append(node.nldsl_code)
             if node.nldsl_code_mod:
-                self.nldsl_code_mods.append(node.nldsl_code_mod)
+                self.nldsl_code_mods.extend(node.nldsl_code_mod.split(NEWLINE))
         elif isinstance(node, Pipe):
             self._source.append(node.nldsl_code)
         else:

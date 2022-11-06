@@ -1,18 +1,19 @@
 from __future__ import annotations
 from lib2to3.pgen2.token import NEWLINE
 from typing import Dict, List, Tuple
-from jacques.ast.jacques_ast import CodeJAST, DslJAST
-from jacques.core.nldsl_utils.nldsl_utils import generate_function, generate_init_statement
+from jacques.core.nldsl_utils.nldsl_utils import (
+    generate_function,
+    generate_init_statement,
+)
 from jacques.ast.parsers.dsl_parser import DslParser
 from jacques.ast.parsers.python_parser import PythonParser
 from jacques.core.rule import ConditionalRule, OverridenRule, Rule
 from jacques.core.rule_synthesizer import RuleSynthesizer
-from jacques.core.example import Example, _ExampleMatrix
+from jacques.core.example import Example
 from jacques.utils import sanitize
 from nldsl import CodeGenerator
 from jacques.world_knowledge import *
 from loguru import logger
-import sys
 
 
 class Buffer:
@@ -43,12 +44,13 @@ class Jacques:
     def __init__(self) -> None:
         self.encountered_objects: List[str] = []
 
-        self.code_generator = CodeGenerator()
+        self.code_generator = CodeGenerator(recommend=False)
         self.examples = []
         self.dsl_parser = DslParser(jacques=self)
         self.python_parser = PythonParser(jacques=self)
         self._rule_synthesizer = RuleSynthesizer(jacques=self)
         self.ruleset: Dict[str, Rule] = {}
+        self.heuristic_on = False
 
     def encountered(self, object):
         if object not in self.encountered_objects:
@@ -56,48 +58,81 @@ class Jacques:
 
     def _generate_rules(self, example: Example) -> bool:
         rules = self._rule_synthesizer.from_example(example)
-        for rule in rules:
+        _rules = []
+        for i in range(len(rules)):
+            repeated = False
+            for j in range(i + 1, len(rules)):
+                if rules[i].__repr__() == rules[j].__repr__():
+                    repeated = True
+                    break
+            if not repeated:
+                _rules.append(rules[i])
+        for rule in _rules:
             self._register_rule(rule)
         return len(rules) > 0
 
-    def get_rule_by_id(self, id: str) -> Rule:
-        return self.ruleset.values().filter(lambda rule: rule.id == id)[0]
+    def get_rule_by_name(self, name: str) -> Rule:
+        try:
+            return list(filter(lambda rule: rule.name == name, self.ruleset.values()))[
+                0
+            ]
+        except IndexError:
+            return None
 
     def _add_to_ruleset(self, rule: Rule | OverridenRule):
-        if rule.name in self.ruleset:
+        if rule.id in self.ruleset:
             if isinstance(rule, OverridenRule):
-                self.ruleset[rule.name] = rule
-                logger.info(f"Overriden rule: {self.ruleset[rule.name]}")
+                self.ruleset[rule.id] = rule
+                logger.info(f"Overriden rule: {self.ruleset[rule.id]}")
+                return rule
             else:
-                old_rule = self.ruleset[rule.name]
+                raise ValueError
+        else:
+            old_rule = self.get_rule_by_name(rule.name)
+            if old_rule is not None:
                 if isinstance(old_rule, Rule):
-                    self.ruleset[rule.name] = ConditionalRule(old_rule, rule)
+                    self.ruleset[old_rule.id] = ConditionalRule(old_rule, rule)
+                    logger.info(f"Conditional rule: {self.ruleset[old_rule.id]}")
+                    return self.ruleset[old_rule.id]
                 else:
                     old_rule.add_option(rule)
-                logger.info(f"Updated rule: {self.ruleset[rule.name]}")
-        else:
-            self.ruleset[rule.name] = rule
+                    logger.info(f"Updated rule: {self.ruleset[old_rule.id]}")
+                    return old_rule
+            else:
+                self.ruleset[rule.id] = rule
+                return rule
 
     def _register_rule(self, rule: Rule | OverridenRule):
-        name = rule.name
-        self._add_to_ruleset(rule)
-        function = generate_function(self.ruleset[name])
+        rule = self._add_to_ruleset(rule)
+        function = generate_function(rule)
         try:
-            self.code_generator.remove_function(name)
-            logger.debug(f'Removed old function "{name}" before updating')
+            self.code_generator.remove_function(rule.name)
+            logger.debug(f'Removed old function "{rule.name}" before updating')
         except KeyError as e:
             pass
-        self.code_generator.register_function(function, name)
+        self.code_generator.register_function(function, rule.name)
 
     def process_all_examples(self):
+        # new_rules = True
+        # while new_rules:
+        #     example: Example
+        #     new_rules = False
+        #     for example in self.examples:
+        #         if example.is_exhausted:
+        #             self.examples.remove(example)
+        #             continue
+        #         new_rules = new_rules or self._generate_rules(example)
+        self.heuristic_on = True
         new_rules = True
         while new_rules:
             example: Example
             new_rules = False
             for example in self.examples:
                 if example.is_exhausted:
+                    self.examples.remove(example)
                     continue
                 new_rules = new_rules or self._generate_rules(example)
+        self.heuristic_on = False
         logger.info("{} rules generated.", len(self.ruleset))
 
     def push_init_statement(self, dsl_string: str, code_string: str) -> None:
@@ -105,13 +140,13 @@ class Jacques:
         self.code_generator.register_function(func, "initialize")
 
     def override_rule(self, rule: OverridenRule):
-        self._add_to_ruleset(rule)
+        self._register_rule(rule)
 
     def reset(self):
         self.encountered_objects = []
         self.examples = []
         self.ruleset = {}
-        self.code_generator = CodeGenerator()
+        self.code_generator = CodeGenerator(recommend=False)
 
     def push_example(self, dsl_string: str, code_string: str) -> None:
         if dsl_string.startswith(EVAL_PIPE_PREFIX):

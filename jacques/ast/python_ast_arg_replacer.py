@@ -13,7 +13,9 @@ class ArgumentReplacer(NodeTransformer):
         self.id_provider = id_provider
 
     def replace(self, node: ast.AST) -> Tuple[ast.AST, _Argument.Placeholder | None]:
-        return super().visit(node), self.placeholder
+        faux_node = ast.Module(body=[node])
+        visited = super().visit(faux_node)
+        return visited.body[0], self.placeholder
 
     def _match(self, value) -> bool:
         return self.dsl_arg.relaxed_equal(value)

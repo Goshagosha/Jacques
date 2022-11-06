@@ -41,10 +41,9 @@ class DslParser(JacquesMember):
             depth += 1
             subquery = query_sequence.pop(-1)
 
-            deconstructed, mapping = self._deconstruct_dsl_subquery(subquery)
+            deconstructed = self._deconstruct_dsl_subquery(subquery)
             jast_in_focus.dsl_string = subquery
             jast_in_focus.deconstructed = deconstructed
-            jast_in_focus.mapping = mapping
 
             if len(query_sequence) > 0:
                 jast_in_focus.children = [DslJAST()]
@@ -54,7 +53,7 @@ class DslParser(JacquesMember):
     def _deconstruct_dsl_subquery(
         self,
         source_string: str,
-    ) -> Tuple[List[str | List[str]], Dict[str, _Argument.DSL | list]]:
+    ) -> List[_Argument.DSL | list]:
         source_string = sanitize(source_string)
         split = re.findall(
             "([\w|\/|.]+|'[\w|\/|,|\s|.]+',|'[\w|\/|,|\s|.]+'|[<>=\-+]+)", source_string
@@ -86,20 +85,16 @@ class DslParser(JacquesMember):
             else:
                 result.append(Singleton.DSL(each, len(result)))
 
-        # To prepare the dsl string for rule generation, we replace each argument with a random hash, and map hashes to arguments
-        dictionary: Dict[str, _Argument] = {}
         for each in result:
-            h = uuid().hex
             if isinstance(each, Listleton.DSL):
                 starts_at = each.index_in_parent
                 ends_at = len(each.value) + starts_at
-                split = split[:starts_at] + [h] + split[ends_at + 1 :]
+                split = split[:starts_at] + [each] + split[ends_at + 1 :]
             elif isinstance(each, Operaton.DSL):
                 starts_at = each.index_in_parent
                 ends_at = 3 + starts_at
-                split = split[:starts_at] + [h] + split[ends_at:]
+                split = split[:starts_at] + [each] + split[ends_at:]
             else:
-                split[each.index_in_parent] = h
-            dictionary[h] = each
+                split[each.index_in_parent] = each
 
-        return split, dictionary
+        return split

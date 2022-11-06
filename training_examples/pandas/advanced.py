@@ -7,7 +7,7 @@ import pandas as pd
 data = pd.read_csv('covid_20_data.csv') 
 
 # create_dataframe & apply min & show_schema & sort_by ... descending
-## other_df = create dataframe from data with header 'Country/Region', 'Confirmed' | apply min on 'Confirmed' as 'Min confirmed'| sort by 'Min confirmed' descending | show schema 
+## other_df = create dataframe from data with header 'Country/Region', 'Confirmed' | apply min on 'Confirmed' as 'Min confirmed' | sort by 'Min confirmed' descending | show schema 
 other_df = pd.DataFrame(data, columns=['Country/Region', 'Confirmed']).agg({'Confirmed' : 'min'}).rename(columns={'Confirmed' : 'Min confirmed'}).sort_values(['Min confirmed'], axis='index', ascending=[False]).info(verbose=False) 
 
 # select_rows & select_columns & sort_by ... ascending & save_to csv
@@ -15,7 +15,7 @@ other_df = pd.DataFrame(data, columns=['Country/Region', 'Confirmed']).agg({'Con
 data['Confirmed' > 100].sort_values(['Confirmed'], axis='index', ascending=[True]).to_csv('save_target.csv') 
 
 # join & replace_values & append_column & apply sum
-## on data | join left other_df on 'Confirmed' | append column 'Confirmed' - 'Deaths' as 'Active' | apply sum on 'Active' as 'Total Active' 
+## on data | join left other_df on 'Confirmed' | append column 'Confirmed' - 'Deaths' as 'Active' | apply sum on 'Active' 
 data.join(other_df, on=['Confirmed'], how='left').assign(**{'Active': data.join(other_df, on=['Confirmed'], how='left').apply(lambda row: 'Confirmed' - 'Deaths', axis=0).values}).agg({'Active' : 'sum'}).rename(columns={'Active' : 'Total Active'}) 
 
 
@@ -46,7 +46,7 @@ data.agg({'Active' : 'sum'}).rename(columns={'Active' : 'Total active'}).agg({'C
 # union & rename_columns & rename_columns & describe
 # ## on data | rename columns 'Confirmed' to 'Confident', 'Active' to 'Still ill' | rename columns 'Deaths' to 'Departed' | describe 
 # data.rename(columns={'Confirmed': 'Confident', 'Active': 'Still ill'}).rename(columns={'Deaths': 'Departed'}).describe() 
-## on data | rename columns 'Confirmed' to 'Confident'| rename columns 'Deaths' to 'Departed' | describe 
+## on data | rename columns 'Confirmed' to 'Confident' | rename columns 'Deaths' to 'Departed' | describe 
 data.rename(columns={'Confirmed': 'Confident'}).rename(columns={'Deaths': 'Departed'}).describe() 
 
 # drop_duplicates & sort_by ... ascending & create_dataframe & count
