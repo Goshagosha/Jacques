@@ -95,6 +95,9 @@ class DslParser(JacquesMember):
                 ends_at = 3 + starts_at
                 split = split[:starts_at] + [each] + split[ends_at:]
             else:
-                split[each.index_in_parent] = each
+                if len(split) > each.index_in_parent:
+                    split[each.index_in_parent] = each
+                else:
+                    split.append(each)
 
         return split

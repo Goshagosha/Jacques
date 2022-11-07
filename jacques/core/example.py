@@ -60,7 +60,7 @@ class _ExampleMatrix:
         self.y = len(dsl_header)
         self.x = len(code_header)
         self.m = np.zeros((self.y, self.x), dtype=int)
-        self.pipe_nodes = [[] for i in range(self.y)]
+        self.pipe_nodes = [[] for _ in range(self.y)]
 
         root_partitions = self._root_partitions(code_header[0], self.y - 1)
         for root_partition in root_partitions:

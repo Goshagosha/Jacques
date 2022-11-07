@@ -9,7 +9,7 @@ j = Jacques()
 
 # j.push_examples_from_file("training_examples/spark/easy.py")
 # j.push_examples_from_file("training_examples/pandas/easy.py")
-j.push_examples_from_file("training_examples/pandas/advanced.py")
+j.push_examples_from_file("training_examples/spark/advanced.py")
 
 
 # ########################################################
@@ -35,14 +35,33 @@ j.push_examples_from_file("training_examples/pandas/advanced.py")
 # """
 # j.push_example(*s.split("\n")[1:3])
 # ########################################################
-
-# j.encountered("data")
-
 # s = """
-# ## df1 = create dataframe from data with header 'Country/Region' | save to 'save_target.csv' as csv
-# df1 = pd.DataFrame(data, columns=['Country/Region']).to_csv('save_target.csv')
+# ## on data | group by 'Col'
+# data.groupby(['Col'])
 # """
 # j.push_example(*s.split("\n")[1:3])
-########################################################
+# ########################################################
+# s = """
+# ## on data | drop columns 'Col'
+# data.drop(columns=['Col'])
+# """
+# j.push_example(*s.split("\n")[1:3])
+# ########################################################
+# s = """
+# ## on data | count
+# data.shape[0]
+# """
+# j.push_example(*s.split("\n")[1:3])
+# ########################################################
+
+
+# s = """
+# ## on data | group by 'Country/Region' | intersection other_df | drop columns 'Country/Region' | count
+# data.groupby(['Country/Region']).merge(other_df).drop(columns=['Country/Region']).shape[0]
+# """
+# j.push_example(*s.split("\n")[1:3])
+# #######################################################
 
 j.process_all_examples()
+for rule in j.ruleset.values():
+    logger.info(rule)

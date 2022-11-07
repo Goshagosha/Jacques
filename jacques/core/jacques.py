@@ -113,15 +113,15 @@ class Jacques:
         self.code_generator.register_function(function, rule.name)
 
     def process_all_examples(self):
-        # new_rules = True
-        # while new_rules:
-        #     example: Example
-        #     new_rules = False
-        #     for example in self.examples:
-        #         if example.is_exhausted:
-        #             self.examples.remove(example)
-        #             continue
-        #         new_rules = new_rules or self._generate_rules(example)
+        new_rules = True
+        while new_rules:
+            example: Example
+            new_rules = False
+            for example in self.examples:
+                if example.is_exhausted:
+                    self.examples.remove(example)
+                    continue
+                new_rules = new_rules or self._generate_rules(example)
         self.heuristic_on = True
         new_rules = True
         while new_rules:
@@ -134,6 +134,9 @@ class Jacques:
                 new_rules = new_rules or self._generate_rules(example)
         self.heuristic_on = False
         logger.info("{} rules generated.", len(self.ruleset))
+        logger.info("Examples not exhausted: {}", len(self.examples))
+        for example in self.examples:
+            logger.info(example)
 
     def push_init_statement(self, dsl_string: str, code_string: str) -> None:
         func = generate_init_statement(dsl_string, code_string)
