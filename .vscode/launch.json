@@ -5,11 +5,43 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Evaluate",
+            "type": "python",
+            "request": "launch",
+            "program": "evaluate.py",
+            "args": [
+                // "training_examples/pandas_v2/L1_R1.py",
+                // "training_examples/pandas_v2/L2_R1.py",
+                // "training_examples/pandas_v2/L2_R2.py",
+                // "training_examples/pandas_v2/L4_R1.py",
+                // "training_examples/pandas_v2/L4_R15.py",
+                // "training_examples/pandas_v2/L4_R2.py",
+                // "training_examples/pandas_v2/L6_R1.py",
+                // "training_examples/pandas_v2/L6_R15.py",
+                // "training_examples/pandas_v2/L6_R2.py",
+                // "training_examples/spark_v2/L1_R1.py",
+                // "training_examples/spark_v2/L2_R1.py",
+                // "training_examples/spark_v2/L2_R2.py",
+                // "training_examples/spark_v2/L4_R1.py",
+                // "training_examples/spark_v2/L4_R15.py",
+                // "training_examples/spark_v2/L4_R2.py",
+                // "training_examples/spark_v2/L6_R1.py",
+                // "training_examples/spark_v2/L6_R15.py",
+                // "training_examples/spark_v2/L6_R2.py",
+                // "training_examples/polars_v2/L1_R1.py",
+                // "training_examples/polars_v2/L6_R1.py",
+                // "training_examples/polars_v2/L6_R15.py",
+                "training_examples/polars_v2/L6_R2.py",
+            ],
+            "console": "internalConsole",
+            "justMyCode": true
+        },
+        {
             "name": "File",
             "type": "python",
             "request": "launch",
             "program": "${file}",
-            "console": "integratedTerminal",
+            "console": "internalConsole",
             "justMyCode": true
         },
         {
@@ -17,7 +49,7 @@
             "type": "python",
             "request": "launch",
             "program": "${file}",
-            "console": "integratedTerminal",
+            "console": "internalConsole",
             "justMyCode": false
         },
         {
@@ -25,7 +57,7 @@
             "type": "python",
             "request": "launch",
             "program": "main.py",
-            "console": "integratedTerminal",
+            "console": "internalConsole",
             "justMyCode": true
         },
         {
@@ -33,7 +65,7 @@
             "type": "python",
             "request": "launch",
             "program": "main.py",
-            "console": "integratedTerminal",
+            "console": "internalConsole",
             "justMyCode": false
         },
         {
@@ -41,7 +73,7 @@
             "type": "python",
             "request": "launch",
             "program": "test.py",
-            "console": "integratedTerminal",
+            "console": "internalConsole",
             "justMyCode": true
         },
         {
@@ -49,7 +81,7 @@
             "type": "python",
             "request": "launch",
             "program": "test.py",
-            "console": "integratedTerminal",
+            "console": "internalConsole",
             "justMyCode": false
         },
         {
@@ -57,7 +89,7 @@
             "type": "python",
             "request": "launch",
             "program": "pytest",
-            "console": "integratedTerminal",
+            "console": "internalConsole",
             "justMyCode": false
         },
     ]

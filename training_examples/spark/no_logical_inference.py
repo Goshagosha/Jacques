@@ -43,8 +43,8 @@ intersected = data.intersect(only_country_deaths)
 data.select(["SNo", "ObservationDate"])
 
 # select_rows
-## on data | select rows ('SNo' > 100) and ('SNo' < 200)
-data.filter(("SNo" > 100) & ("SNo" < 200))
+## on data | select rows 'SNo' > 100
+data.filter("SNo" > 100)
 
 # drop_columns
 ## on data | drop columns 'Confirmed'
@@ -55,8 +55,20 @@ data.drop(["Confirmed"])
 data.join(only_country_deaths, on=["Country/Region"], how="inner")
 
 # group_by
-## on data | group by 'Country/Region'
-data.groupBy(["Country/Region"])
+## on data | group by 'Country/Region' apply mean on 'Confirmed' as 'Mean Confirmed'
+data.groupBy(["Country/Region"]).agg(mean("Confirmed").alias("Mean Confirmed"))
+
+# group_by
+## on data | group by 'Country/Region' apply sum on 'Confirmed' as 'Total Confirmed'
+data.groupBy(["Country/Region"]).agg(sum("Confirmed").alias("Total Confirmed"))
+
+# group_by
+## on data | group by 'Country/Region' apply max on 'Confirmed' as 'Max Confrimed'
+data.groupBy(["Country/Region"]).agg(max("Confirmed").alias("Max Confrimed"))
+
+# group_by
+## on data | group by 'Country/Region' apply min on 'Confirmed' as 'Min Confirmed'
+data.groupBy(["Country/Region"]).agg(min("Confirmed").alias("Min Confirmed"))
 
 # replace_values
 ## on data | replace 1 with 0
@@ -101,19 +113,3 @@ data.head(10)
 # count
 ## on data | count
 data.count()
-
-# apply
-## on data | apply mean on 'Confirmed' as 'Mean Confirmed'
-data.agg(mean("Confirmed").alias("Mean Confirmed"))
-
-# apply
-## on data | apply sum on 'Confirmed' as 'Total Confirmed'
-data.agg(sum("Confirmed").alias("Total Confirmed"))
-
-# apply
-## on data | apply max on 'Confirmed' as 'Max Confrimed'
-data.agg(max("Confirmed").alias("Max Confrimed"))
-
-# apply
-## on data | apply min on 'Confirmed' as 'Min Confirmed'
-data.agg(min("Confirmed").alias("Min Confirmed"))

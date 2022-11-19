@@ -39,8 +39,8 @@ intersected = data.merge(only_country_deaths)
 data[["SNo", "ObservationDate"]]
 
 # select_rows
-## on data | select rows ('SNo' > 100) and ('SNo' < 200)
-data[("SNo" > 100) & ("SNo" < 200)]
+## on data | select rows 'SNo' > 100
+data[("SNo" > 100)]
 
 # drop_columns
 ## on data | drop columns 'Confirmed'
@@ -50,9 +50,25 @@ data.drop(columns=["Confirmed"])
 ## on data | join inner only_country_deaths on 'Country/Region'
 data.join(only_country_deaths, on=["Country/Region"], how="inner")
 
+# join
+## on data | join right only_country_deaths on 'Country/Region' 
+data.join(only_country_deaths, on=['Country/Region'], how='right') 
+
 # group_by
-## on data | group by 'Country/Region'
-data.groupby(["Country/Region"])
+## on data | group by 'Country/Region' apply mean on 'Confirmed' as 'Mean Confirmed'
+data.groupby(["Country/Region"]).agg({"Confirmed": "mean"}).rename(columns={"Confirmed": "Mean Confirmed"})
+
+# group_by
+## on data | group by 'Country/Region' apply sum on 'Confirmed' as 'Total Confirmed'
+data.groupby(["Country/Region"]).agg({"Confirmed": "sum"}).rename(columns={"Confirmed": "Total Confirmed"})
+
+# group_by
+## on data | group by 'Country/Region' apply max on 'Confirmed' as 'Max Confrimed'
+data.groupby(["Country/Region"]).agg({"Confirmed": "max"}).rename(columns={"Confirmed": "Max Confrimed"})
+
+# group_by
+## on data | group by 'Country/Region' apply min on 'Confirmed' as 'Min Confirmed'
+data.groupby(["Country/Region"]).agg({"Confirmed": "min"}).rename(columns={"Confirmed": "Min Confirmed"})
 
 # replace_values
 ## on data | replace 1 with 0
@@ -97,19 +113,3 @@ data.head(10)
 # count
 ## on data | count
 data.shape[0]
-
-# apply
-## on data | apply mean on 'Confirmed' as 'Mean Confirmed'
-data.agg({"Confirmed": "mean"}).rename(columns={"Confirmed": "Mean Confirmed"})
-
-# apply
-## on data | apply sum on 'Confirmed' as 'Total Confirmed'
-data.agg({"Confirmed": "sum"}).rename(columns={"Confirmed": "Total Confirmed"})
-
-# apply
-## on data | apply max on 'Confirmed' as 'Max Confrimed'
-data.agg({"Confirmed": "max"}).rename(columns={"Confirmed": "Max Confrimed"})
-
-# apply
-## on data | apply min on 'Confirmed' as 'Min Confirmed'
-data.agg({"Confirmed": "min"}).rename(columns={"Confirmed": "Min Confirmed"})

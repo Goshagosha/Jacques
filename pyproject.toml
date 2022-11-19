@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jacques"
+version = "1.0.0"
+description = ""
+readme = "README.md"
+authors = [{ name = "Egor Svezhintsev", email = "svezhegor@gmail.com" }]
+license = { file = "LICENSE" }
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
+keywords = ["nldsl", "dsl"]
+dependencies = [
+    "numpy==1.23.4",
+    "pandas==1.5.1",
+    "nldsl>=0.15.4",
+    "loguru>=0.6.0",
+    "fastapi>=0.87.0",
+    "pydantic>=1.10.2",
+    "uvicorn[standard]==0.19.0",
+]
+requires-python = ">=3.10"
+
+[project.optional-dependencies]
+dev = ["black", "pytest"]
+
+[project.urls]
+Homepage = "https://github.com/Goshagosha/Jacques"

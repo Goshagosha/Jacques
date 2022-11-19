@@ -8,3 +8,9 @@ __pycache__
 .VSCodeCounter
 *.code-workspace
 logs
+.vscode
+*.egg-info
+dist
+.pytest_cache
+test_portable_python.env
+.DS_Store

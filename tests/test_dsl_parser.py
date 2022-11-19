@@ -1,5 +1,5 @@
 from typing import Dict
-import jacques.world_knowledge as wk
+import src.world_knowledge as wk
 
 from main import Jacques
 
