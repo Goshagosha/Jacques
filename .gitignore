@@ -5,3 +5,13 @@ test.py
 *.gv
 *.gv.png
 __pycache__
+.VSCodeCounter
+*.code-workspace
+logs
+!research/logs
+.vscode
+*.egg-info
+dist
+.pytest_cache
+test_portable_python.env
+.DS_Store

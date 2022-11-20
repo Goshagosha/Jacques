@@ -10,9 +10,13 @@ data = pd.read_csv('covid_19_data.csv')
 ## df1 = create dataframe from data with header 'Country/Region' | save to 'save_target.csv' as csv 
 df1 = pd.DataFrame(data, columns=['Country/Region']).to_csv('save_target.csv') 
 
+# create_dataframe & save_to csv
+## df2 = create dataframe from data with header 'Country/Region' | save to 'save_target.csv' as csv 
+df2 = pd.DataFrame(data, columns=['Country/Region']).to_csv('save_target.csv') 
+
 # union & save_to json
-## on data | union df1 | save to 'another_save.csv' as json 
-pd.concat([data, df1]).to_json('another_save.csv') 
+## on data | union df1 | save to 'another_save.json' as json 
+pd.concat([data, df1]).to_json('another_save.json') 
 
 # group_by & union
 ## on data | group by 'Country/Region' | union df1 
@@ -59,15 +63,18 @@ data.head(100).to_json('first_hundred.json')
 print(data[['Confirmed', 'Deaths']]) 
 
 # append_column & sort_by ... ascending
-## on data | append column 'Confirmed' - 'Deaths' as 'Survivors' | sort by 'Survivors' ascending 
+# on data | append column 'Confirmed' - 'Deaths' as 'Survivors' | sort by 'Survivors' ascending 
+## on data | append column 'Confirmed' - 'Deaths' as 'Survivors' | sort ascending by 'Survivors' 
 data.assign(**{'Survivors': data.apply(lambda row: 'Confirmed' - 'Deaths', axis=1).values}).sort_values(['Survivors'], axis='index', ascending=[True]) 
 
 # sort_by ... descending & drop_duplicates
-## on data | sort by 'Deaths' descending | drop duplicates 
+# on data | sort by 'Deaths' descending | drop duplicates 
+## on data | sort descending by 'Deaths' | drop duplicates 
 data.sort_values(['Deaths'], axis='index', ascending=[False]).drop_duplicates() 
 
 # apply mean & sort_by ascending
-## on data | apply mean on 'Deaths' as 'Mean deaths' | sort by 'Mean deaths' ascending 
+# on data | apply mean on 'Deaths' as 'Mean deaths' | sort by 'Mean deaths' ascending 
+## on data | apply mean on 'Deaths' as 'Mean deaths' | sort by ascending 'Mean deaths'
 data.agg({'Deaths' : 'mean'}).rename(columns={'Deaths' : 'Mean deaths'}).sort_values(['Mean deaths'], axis='index', ascending=[True]) 
 
 # head & count

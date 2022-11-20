@@ -1,63 +1,128 @@
-from jacques.matcher import Matcher
-from jacques.parser.dsl_parser import DslParser
-from jacques.parser.python_parser import PythonParser
-from jacques.problem_knowledge import ProblemKnowledge
+import os
+from src.jacques.core.jacques import Jacques
+from jacques.constants import *
+from loguru import logger
 
-import jacques.world_knowledge as world_knowledge
-from jacques.ruleset_synthesizer import generate_mock_rule as rule_synth
+def no_latex(record):
+    try:
+        return not record['extra']['latex']
+    except KeyError:
+        return True
 
+try:
+    os.remove('logs/jacques.log')
+except FileNotFoundError:
+    pass
+logger._core.handlers[0]._filter = no_latex
+logger.add("logs/jacques.log", level="DEBUG", filter=no_latex)
 
-class Jacques:
-    def __init__(self, world_knowledge, rule_synth):
-        self.rule_synth = rule_synth
-        self.world_knowledge = world_knowledge
-        self.problem_knowledge = ProblemKnowledge()
-        self.dsl_parser = DslParser(
-            world_knowledge=self.world_knowledge,
-            problem_knowledge=self.problem_knowledge,
-        )
-        self.python_parser = PythonParser(
-            world_knowledge=self.world_knowledge,
-            problem_knowledge=self.problem_knowledge,
-        )
-        self.matcher = Matcher(jacques=self)
-        self.rule_set = None
-
-    def load_example_data(self, dsl_string, code_string):
-        dsl_tree = self.dsl_parser.parse(dsl_string)
-        code_tree = self.python_parser.parse(code_string)
-        self.matcher.load_sample(dsl_tree, code_tree)
-        print(self.matcher.next_most_probable_pairing())
-
-    def load_example_file(self, path):
-        dsl = None
-        with open(path, "r") as file:
-            next_line_is_code = False
-            for line in file.readlines():
-                if next_line_is_code:
-                    self.load_example_data(dsl, line)
-                    next_line_is_code = False
-                    dsl = None
-                elif line.startswith("##"):
-                    dsl = line[3:]
-                    next_line_is_code = True
-
-    def infer_ruleset(self):
-        self.rule_set = self.matcher.generate_rules()
-        return self.rule_set
+j = Jacques()
 
 
-dsl = "on data | drop columns 'Active', 'Country/Region' | select rows 'Confirmed' < 20 | group by 'Deaths' | union other_dataframe | join outer another_df on 'SNo' | sort by 'Recovered' descending | describe | show"
-py = "print(pd.concat([data.drop(columns=['Active', 'Country/Region'])['Confirmed' < 20].groupby(['Deaths']), other_dataframe]).join(another_df, on=['SNo'], how='outer').sort_values(['Recovered'], axis='index', ascending=[False]).describe()) "
-spark_py = "data.drop(['Active', 'Country/Region']).filter('Confirmed' < 20).groupBy(['Deaths']).unionByName(other_dataframe).join(another_df, on=['SNo'], how='outer').sort(['Recovered'], ascending=[False]).describe().show()"
+# j.push_examples_from_file("training_examples/pandas_v2/L6_R2.py")
+j.encountered("data")
 
-branched_py = 'data.join(other_df, on=["Confirmed"], how="left").withColumn("Active", "Confirmed" - "Deaths").agg(sum("Active").alias("Total Active"))'
+s = """
+## on data
+data
+"""
+j.push_example(*s.split("\n")[1:3])
 
-j = Jacques(world_knowledge, rule_synth)
+s = """
+## on data | append column 'Confirmed' - 'Recovered' as 'Deaths' 
+data.with_column((pl.col("Confirmed") - pl.col("Recovered")).alias("Deaths"))
+"""
+j.push_example(*s.split("\n")[1:3])
 
-# j.load_example_file("training_examples/spark/no_logical_inference.py")
-# ruleset = j.infer_ruleset()
+# s = """
+# ## on data | group by 'Country/Region' apply mean on 'Confirmed' as 'Mean Confirmed'
+# data.groupby("Country/Region").agg(pl.mean("Confirmed").alias("Mean Confirmed"))
+# """
+# j.push_example(*s.split("\n")[1:3])
+
+# s = """
+# ## on data | group by 'Country/Region' apply sum on 'Confirmed' as 'Total Confirmed'
+# data.groupby("Country/Region").agg(pl.sum("Confirmed").alias("Total Confirmed"))
+# """
+# j.push_example(*s.split("\n")[1:3])
+
+# s = """
+# ## on data | group by 'Country/Region' apply max on 'Confirmed' as 'Max Confirmed'
+# data.groupby("Country/Region").agg(pl.max("Confirmed").alias("Max Confirmed"))
+# """
+# j.push_example(*s.split("\n")[1:3])
+
+# s = """
+# ## on data | group by 'Country/Region' apply min on 'Confirmed' as 'Min Confirmed'
+# data.groupby("Country/Region").agg(pl.min("Confirmed").alias("Min Confirmed"))
+# """
+# j.push_example(*s.split("\n")[1:3])
+
+# j.push_examples_from_file("training_examples/pandas/no_logical_inference.py")
+
+# #######################################################
+# s = """
+# ## data = load from 'covid_19_data.csv' as csv_with_header
+# data = pd.read_csv("covid_19_data.csv")
+# """
+# j.push_example(*s.split("\n")[1:3])
+
+# """
+# j.push_example(*s.split("\n")[1:3])
+##########################################################
+# j.encountered("data")
+# # j.encountered("df1")
+
+# ##########################################################
+# s = """
+# ## on data
+# data
+# """
+# j.push_example(*s.split("\n")[1:3])
+# ####################################################
+# s = """ 
+# ## on data | select rows 'SNo' > 100
+# data[("SNo" > 100)]
+# """
+# j.push_example(*s.split("\n")[1:3])
+# ######################################################
+# s = """ 
+# ## on data | select rows 'SNo' > 100
+# data[("SNo" > 100)]
+# """
+# j.push_example(*s.split("\n")[1:3])
+######################################################
+# # s = """
+# # ## on data | union other_df 
+# # pd.concat([data, other_df])
+# """
+# j.push_example(*s.split("\n")[1:3])
+#########################################################
+# s = """
+# ## on data | group by 'Col'
+# data.groupby(['Col'])
+# """
+# j.push_example(*s.split("\n")[1:3])
+# ########################################################
+# s = """
+# ## on data | drop columns 'Col'
+# data.drop(columns=['Col'])
+# """
+# j.push_example(*s.split("\n")[1:3])
+# ########################################################
+# s = """
+# ## on data | count
+# data.shape[0]
+# """
+# j.push_example(*s.split("\n")[1:3])
+# ########################################################
 
 
-t = j.python_parser.parse(py)
-t.visualize("branched_tree")
+# s = """
+# ## on data | group by 'Country/Region' | intersection other_df | drop columns 'Country/Region' | count
+# data.groupby(['Country/Region']).merge(other_df).drop(columns=['Country/Region']).shape[0]
+# """
+# j.push_example(*s.split("\n")[1:3])
+# #######################################################
+
+j.process_all_examples()

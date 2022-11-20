@@ -11,7 +11,7 @@ spark = SparkSession.builder.appName("Spark Example").getOrCreate()
 data = spark.read.format('csv').option("header", True).load('covid_20_data.csv') 
 
 # create_dataframe & apply min & show_schema & sort_by ... descending
-## other_df = create dataframe from data with header 'Country/Region', 'Confirmed' | apply min on 'Confirmed' as 'Min confirmed'| sort by 'Min confirmed' descending | show schema 
+## other_df = create dataframe from data with header 'Country/Region', 'Confirmed' | apply min on 'Confirmed' as 'Min confirmed' | sort by 'Min confirmed' descending | show schema 
 other_df = spark.createDataFrame(data, schema=['Country/Region', 'Confirmed']).agg(min('Confirmed').alias('Min confirmed')).sort(['Min confirmed'], ascending=[False]).printSchema() 
 
 # select_rows & select_columns & sort_by ... ascending & save_to csv
@@ -47,8 +47,10 @@ data.filter('Active' > 200).join(other_df, on=['Active', 'Deaths'], how='right')
 data.agg(sum('Active').alias('Total active')).agg(min('Confirmed').alias('Least confirmed')).printSchema() 
 
 # union & rename_columns & rename_columns & describe
-## on data | rename columns 'Confirmed' to 'Confident', 'Active' to 'Still ill' | rename columns 'Deaths' to 'Departed' | describe 
-data.withColumnRenamed('Confirmed', 'Confident').withColumnRenamed('Active', 'Still ill').withColumnRenamed('Deaths', 'Departed').describe() 
+# ## on data | rename columns 'Confirmed' to 'Confident', 'Active' to 'Still ill' | rename columns 'Deaths' to 'Departed' | describe 
+# data.withColumnRenamed('Confirmed', 'Confident').withColumnRenamed('Active', 'Still ill').withColumnRenamed('Deaths', 'Departed').describe() 
+## on data | rename columns 'Confirmed' to 'Confident' | rename columns 'Deaths' to 'Departed' | describe 
+data.withColumnRenamed('Confirmed', 'Confident').withColumnRenamed('Deaths', 'Departed').describe() 
 
 # drop_duplicates & sort_by ... ascending & create_dataframe & count
 ## no_of_something = create dataframe from data with header 'Confirmed', 'Country/Region', 'Active' | drop duplicates | sort by 'Active' ascending | count 

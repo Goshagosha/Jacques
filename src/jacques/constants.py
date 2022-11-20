@@ -1,0 +1,6 @@
+EVAL_PIPE_PREFIX = "##"
+DEFINE_PIPE_PREFIX = "#!"
+COMMENT_PREFIX = "#"
+NEWLINE = "\n"
+INDENT = "\t"
+DSL_INIT_STATEMENT = "target code ="

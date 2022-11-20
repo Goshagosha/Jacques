@@ -1,11 +1,11 @@
 from pathlib import Path
-from jacques.parser.python_parser import PythonParser
 
-import jacques.world_knowledge as wk
+from main import Jacques
 
 
 def pp(string):
-    return PythonParser(world_knowledge=wk, problem_knowledge=None).parse(string)
+    j = Jacques()
+    return j.python_parser.parse(string)
 
 
 def draw_test_result(tree, name):
