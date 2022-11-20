@@ -1,7 +1,7 @@
 from __future__ import annotations
-import ast
 import re
 from typing import TYPE_CHECKING
+from uuid import uuid4 as uuid
 from loguru import logger
 import numpy as np
 import pandas as pd
@@ -12,13 +12,9 @@ from ..ast.jacques_ast_utils import (
 from ..ast.python_ast_heur_comparer import Comparer
 from .jacques_member import JacquesMember
 from .rule import ConditionalRule, Rule
-from ..utils import is_superstring
-from ..world_knowledge import *
-from .arguments import Pipe
-from uuid import uuid4 as uuid
 
 # Prevent pandas from truncating the output and making linebreaks
-pd.set_option('display.max_columns', None)
+pd.set_option("display.max_columns", None)
 pd.options.display.width = 0
 
 if TYPE_CHECKING:
@@ -133,9 +129,7 @@ class _ExampleMatrix:
             self.m[i, self.code_header.index(code_jast)] = 1
             write_children(code_jast, i)
 
-    def _root_partitions(
-        self, code_jast: CodeJAST, dsl_height
-    ) -> List[List[CodeJAST]]:
+    def _root_partitions(self, code_jast: CodeJAST, dsl_height) -> List[List[CodeJAST]]:
         subparts = []
         for child in code_jast.children:
             subparts.extend(self._root_partitions_rec(child, dsl_height - 1))
@@ -191,34 +185,42 @@ class _ExampleMatrix:
                 for code_jast in code_header_legal_subset:
                     if isinstance(rule, ConditionalRule):
                         for rule_code_jast in rule.code_jasts.values():
-                            code_regex_match = re.match(rule.regex_code, code_jast.source_code)
+                            code_regex_match = re.match(
+                                rule.regex_code, code_jast.source_code
+                            )
                             if code_regex_match:
                                 not_matched = False
                                 for k, v in dsl_regex_match.groupdict().items():
                                     if k not in code_regex_match.groupdict():
                                         not_matched = True
-                                        break 
+                                        break
                                     if v not in code_regex_match.group(k):
                                         not_matched = True
                                         break
                                 if not_matched:
                                     continue
-                                matched_code_jast_list = extract_subtree_by_ref_as_ref_list(
-                                    code_jast, rule_code_jast
+                                matched_code_jast_list = (
+                                    extract_subtree_by_ref_as_ref_list(
+                                        code_jast, rule_code_jast
+                                    )
                                 )
                                 if matched_code_jast_list:
                                     self.m[i, :] = 0
                                     for code_jast in matched_code_jast_list:
                                         self.m[:, self.code_header.index(code_jast)] = 0
-                                    self.pipe_nodes[i - 1].append(matched_code_jast_list[0])
+                                    self.pipe_nodes[i - 1].append(
+                                        matched_code_jast_list[0]
+                                    )
                     elif isinstance(rule, Rule):
-                        code_regex_match = re.match(rule.regex_code, code_jast.source_code)
+                        code_regex_match = re.match(
+                            rule.regex_code, code_jast.source_code
+                        )
                         if code_regex_match:
                             not_matched = False
                             for k, v in dsl_regex_match.groupdict().items():
                                 if k not in code_regex_match.groupdict():
                                     not_matched = True
-                                    break 
+                                    break
                                 if v not in code_regex_match.group(k):
                                     not_matched = True
                                     break
@@ -238,19 +240,19 @@ class _ExampleMatrix:
         return self.m.sum() == 0
 
     def to_latex_table(self):
-        result = '\\begin{blockarray}{' + 'c' * (self.x+1) + '}\n'
+        result = "\\begin{blockarray}{" + "c" * (self.x + 1) + "}\n"
         for x in range(self.x):
-            result += '& \\text{\pw{' + self.code_header[x].command + '}}'
-        result += '\\\\\n'
-        result += '\\begin{block}{c[' + self.x * 'c' + ']}\n'
+            result += "& \\text{\pw{" + self.code_header[x].command + "}}"
+        result += "\\\\\n"
+        result += "\\begin{block}{c[" + self.x * "c" + "]}\n"
         for y in range(self.y):
-            result += '\\text{\pw{' + self.dsl_header[y].command + '}}'
+            result += "\\text{\pw{" + self.dsl_header[y].command + "}}"
             for x in range(self.x):
-                result += ' & ' + str(int(self.m[y, x]))
-            result += ' \\\\\n'
-        result += '\\end{block}\n'
-        result += '\\end{blockarray}\n'
-        return f'\n\[\n{result}\]'
+                result += " & " + str(int(self.m[y, x]))
+            result += " \\\\\n"
+        result += "\\end{block}\n"
+        result += "\\end{blockarray}\n"
+        return f"\n\[\n{result}\]"
 
     def __str__(self) -> str:
         return str(
@@ -291,6 +293,8 @@ class _ExampleMatrix:
             code_jasts = [self.code_header[j] for j in js]
             codejast_complete_subtree = SubtreeBuilder().build(code_jasts)
             if not self.pipe_nodes[i] and i < self.y - 1:
-                self.pipe_nodes[i] = [self.code_header[k] for k in list(np.where(self.m[i + 1] == 1)[0])]
+                self.pipe_nodes[i] = [
+                    self.code_header[k] for k in list(np.where(self.m[i + 1] == 1)[0])
+                ]
             result.append((dsl_jast, codejast_complete_subtree, self.pipe_nodes[i]))
         return result

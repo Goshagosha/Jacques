@@ -29,9 +29,9 @@
                 // "training_examples/spark_v2/L6_R15.py",
                 // "training_examples/spark_v2/L6_R2.py",
                 // "training_examples/polars_v2/L1_R1.py",
-                // "training_examples/polars_v2/L6_R1.py",
+                "training_examples/polars_v2/L6_R1.py",
                 // "training_examples/polars_v2/L6_R15.py",
-                "training_examples/polars_v2/L6_R2.py",
+                // "training_examples/polars_v2/L6_R2.py",
             ],
             "console": "internalConsole",
             "justMyCode": true

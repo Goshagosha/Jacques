@@ -1,7 +1,7 @@
 import sys
 from src.jacques.core.rule import ConditionalRule
 from src.jacques.core.jacques import Jacques
-from src.jacques.world_knowledge import *
+from jacques.constants import *
 from loguru import logger
 
 def no_latex(record):

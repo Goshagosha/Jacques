@@ -1,0 +1,153 @@
+2022-11-19 17:15:44.015 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	load from <ARG0> as csv_with_header
+	pd.read_csv(<ARG0>)
+2022-11-19 17:15:44.038 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	create dataframe from <ARG0> with header <LST0>
+	pd.DataFrame(<ARG0>, columns=<LST0>)
+2022-11-19 17:15:44.225 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	join <ARG0> <ARG1> on <LST0>
+	<PIPE>.join(<ARG1>, on=<LST0>, how=<ARG0>)
+2022-11-19 17:15:44.229 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	sort by <LST0> descending
+	<PIPE>.sort_values(<LST0>, axis='index', ascending=[False])
+2022-11-19 17:15:44.232 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	save to <ARG0> as csv
+	<PIPE>.to_csv(<ARG0>)
+2022-11-19 17:15:44.291 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	on <ARG0>
+	<ARG0>
+2022-11-19 17:15:44.295 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	drop columns <LST0>
+	<PIPE>.drop(columns=<LST0>)
+2022-11-19 17:15:44.299 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	head <ARG0>
+	<PIPE>.head(<ARG0>)
+2022-11-19 17:15:44.303 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	count
+	<PIPE>.shape[0]
+2022-11-19 17:15:44.334 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	drop duplicates
+	<PIPE>.drop_duplicates()
+2022-11-19 17:15:44.339 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	sort by <LST0> ascending
+	<PIPE>.sort_values(<LST0>, axis='index', ascending=[True])
+2022-11-19 17:15:44.343 | INFO     | src.jacques.core.jacques:_add_to_ruleset:110 - Conditional rule: <class 'src.jacques.core.rule.ConditionalRule'>
+	sort by <LST0> <CHO0>
+	<PIPE>.sort_values(<LST0>, axis='index', ascending=[False])
+	<PIPE>.sort_values(<LST0>, axis='index', ascending=[True])
+2022-11-19 17:15:44.367 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	describe
+	<PIPE>.describe()
+2022-11-19 17:15:44.372 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	save to <ARG0> as json
+	<PIPE>.to_json(<ARG0>)
+2022-11-19 17:15:44.376 | INFO     | src.jacques.core.jacques:_add_to_ruleset:110 - Conditional rule: <class 'src.jacques.core.rule.ConditionalRule'>
+	save to <ARG0> as <CHO0>
+	<PIPE>.to_csv(<ARG0>)
+	<PIPE>.to_json(<ARG0>)
+2022-11-19 17:15:44.660 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	union <ARG0>
+	pd.concat([<PIPE>, <ARG0>])
+2022-11-19 17:15:45.090 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	intersection <ARG0>
+	<PIPE>.merge(<ARG0>)
+2022-11-19 17:15:45.094 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	apply <ARG0> on <ARG1> as <ARG2>
+	<PIPE>.agg({<ARG1>: <ARG0>}).rename(columns={<ARG1>: <ARG2>})
+2022-11-19 17:15:45.098 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	show
+	print(<PIPE>)
+2022-11-19 17:15:45.431 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	difference <ARG0>
+	<PIPE>[~<PIPE>.isin(<ARG0>).all(1)]
+2022-11-19 17:15:45.602 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	select columns <LST0>
+	<PIPE>[<LST0>]
+2022-11-19 17:15:45.608 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	group by <LST0>
+	<PIPE>.groupby(<LST0>)
+2022-11-19 17:15:45.739 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	rename columns <ARG0> to <ARG1>
+	<PIPE>.rename(columns={<ARG0>: <ARG1>})
+2022-11-19 17:15:45.891 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	select rows <OPR0>
+	<PIPE>[<OPR0>]
+2022-11-19 17:15:46.021 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	show schema
+	<PIPE>.info(verbose=False)
+2022-11-19 17:15:46.554 | INFO     | src.jacques.core.jacques:process_all_examples:170 - 21 rules generated.
+2022-11-19 17:15:46.555 | INFO     | src.jacques.core.jacques:process_all_examples:171 - Examples not exhausted: 1
+2022-11-19 17:15:46.556 | INFO     | src.jacques.core.jacques:process_all_examples:173 - <class 'src.jacques.core.example.Example'>
+	on data | head 10 | replace 'Confirmed' with 'Deaths' | append column 'Confirmed' - 'Recovered' as 'Deaths' | show schema
+	data.head(10).replace('Confirmed', 'Deaths').assign(**{'Deaths': data.head(10).replace('Confirmed', 'Deaths').apply(lambda row: 'Confirmed' - 'Recovered', axis=1).values}).info(verbose=False)
+2022-11-19 17:15:46.557 | INFO     | src.jacques.core.jacques:process_all_examples:174 - Excepted due to parsing errors: 0
+2022-11-19 17:15:46.557 | INFO     | src.jacques.core.jacques:process_all_examples:177 - Rules:
+2022-11-19 17:15:46.558 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	load from <ARG0> as csv_with_header
+	pd.read_csv(<ARG0>)
+2022-11-19 17:15:46.559 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	create dataframe from <ARG0> with header <LST0>
+	pd.DataFrame(<ARG0>, columns=<LST0>)
+2022-11-19 17:15:46.560 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	join <ARG0> <ARG1> on <LST0>
+	<PIPE>.join(<ARG1>, on=<LST0>, how=<ARG0>)
+2022-11-19 17:15:46.561 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.ConditionalRule'>
+	sort by <LST0> <CHO0>
+	<PIPE>.sort_values(<LST0>, axis='index', ascending=[False])
+	<PIPE>.sort_values(<LST0>, axis='index', ascending=[True])
+2022-11-19 17:15:46.563 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.ConditionalRule'>
+	save to <ARG0> as <CHO0>
+	<PIPE>.to_csv(<ARG0>)
+	<PIPE>.to_json(<ARG0>)
+2022-11-19 17:15:46.564 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	on <ARG0>
+	<ARG0>
+2022-11-19 17:15:46.564 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	drop columns <LST0>
+	<PIPE>.drop(columns=<LST0>)
+2022-11-19 17:15:46.565 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	head <ARG0>
+	<PIPE>.head(<ARG0>)
+2022-11-19 17:15:46.566 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	count
+	<PIPE>.shape[0]
+2022-11-19 17:15:46.567 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	drop duplicates
+	<PIPE>.drop_duplicates()
+2022-11-19 17:15:46.568 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	describe
+	<PIPE>.describe()
+2022-11-19 17:15:46.569 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	union <ARG0>
+	pd.concat([<PIPE>, <ARG0>])
+2022-11-19 17:15:46.570 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	intersection <ARG0>
+	<PIPE>.merge(<ARG0>)
+2022-11-19 17:15:46.571 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	apply <ARG0> on <ARG1> as <ARG2>
+	<PIPE>.agg({<ARG1>: <ARG0>}).rename(columns={<ARG1>: <ARG2>})
+2022-11-19 17:15:46.572 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	show
+	print(<PIPE>)
+2022-11-19 17:15:46.573 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	difference <ARG0>
+	<PIPE>[~<PIPE>.isin(<ARG0>).all(1)]
+2022-11-19 17:15:46.574 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	select columns <LST0>
+	<PIPE>[<LST0>]
+2022-11-19 17:15:46.575 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	group by <LST0>
+	<PIPE>.groupby(<LST0>)
+2022-11-19 17:15:46.576 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	rename columns <ARG0> to <ARG1>
+	<PIPE>.rename(columns={<ARG0>: <ARG1>})
+2022-11-19 17:15:46.577 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	select rows <OPR0>
+	<PIPE>[<OPR0>]
+2022-11-19 17:15:46.578 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	show schema
+	<PIPE>.info(verbose=False)
+2022-11-19 17:15:46.582 | INFO     | __main__:<module>:57 - Expected 2 options for rule 'join', but it is not ConditionalRule
+2022-11-19 17:15:46.584 | INFO     | __main__:<module>:57 - Expected 4 options for rule 'apply', but it is not ConditionalRule
+2022-11-19 17:15:46.585 | INFO     | __main__:<module>:49 - Expected rule 'replace' not learned
+2022-11-19 17:15:46.586 | INFO     | __main__:<module>:49 - Expected rule 'append column' not learned

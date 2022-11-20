@@ -13,7 +13,7 @@ from ..core.arguments import (
 )
 from ast import _Precedence, NodeVisitor, iter_fields
 
-from ..world_knowledge import NEWLINE
+from ..constants import NEWLINE
 
 
 def unparse_comparator(comparator: ast.cmpop) -> str:

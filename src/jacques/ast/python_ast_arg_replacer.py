@@ -62,7 +62,7 @@ class ArgumentReplacer(NodeTransformer):
                 [node.left.value, op, node.comparators[0].value], node
             )
         return super().generic_visit(node)
-    
+
     def visit_Lambda(self, node: ast.Lambda) -> Any:
         return self.generic_visit(node)
 

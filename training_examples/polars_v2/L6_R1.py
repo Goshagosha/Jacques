@@ -16,7 +16,7 @@ print(data.agg(pl.mean("Confirmed").alias("Mean Confirmed")).agg(pl.max("Confirm
 
 # on & drop_columns & union & select_rows & select_columns & rename_columns & save_to json
 ## on data | drop columns 'Confirmed' | union only_country_deaths | select rows 'SNo' > 100 | select columns 'SNo', 'ObservationDate' | rename columns 'Confirmed' to 'Deaths' | save to 'output.json' as json 
-pl.concat([data.drop("Confirmed"), only_country_deaths]).filter(pl.col("SNo") > 100).select([["SNo", "ObservationDate"]]).rename({"Country/Region": "Country"}).write_json("output.json")
+pl.concat([data.drop("Confirmed"), only_country_deaths]).filter(pl.col("SNo") > 100).select([["SNo", "ObservationDate"]]).rename({"Confirmed": "Deaths"}).write_json("output.json")
 
 # load_from & join inner & sort_by asc & apply min & describe
 ## load from 'covid_19_data.csv' as csv_with_header | join inner only_country_deaths on 'Country/Region' | sort by 'Confirmed' ascending | apply min on 'Confirmed' as 'Min Confirmed' | describe 

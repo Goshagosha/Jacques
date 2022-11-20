@@ -1,6 +1,6 @@
 import os
 from src.jacques.core.jacques import Jacques
-from src.jacques.world_knowledge import *
+from jacques.constants import *
 from loguru import logger
 
 def no_latex(record):
@@ -17,21 +17,22 @@ logger._core.handlers[0]._filter = no_latex
 logger.add("logs/jacques.log", level="DEBUG", filter=no_latex)
 
 j = Jacques()
-j.push_examples_from_file("training_examples/pandas_v2/L6_R2.py")
-# j.encountered("data")
 
-# s = """
-# ## on data
-# data
-# """
-# j.push_example(*s.split("\n")[1:3])
 
-# s = """
-# ## on data | union only_country_deaths 
-# pd.concat([data, only_country_deaths]) 
-# """
-# j.push_example(*s.split("\n")[1:3])
+# j.push_examples_from_file("training_examples/pandas_v2/L6_R2.py")
+j.encountered("data")
 
+s = """
+## on data
+data
+"""
+j.push_example(*s.split("\n")[1:3])
+
+s = """
+## on data | append column 'Confirmed' - 'Recovered' as 'Deaths' 
+data.with_column((pl.col("Confirmed") - pl.col("Recovered")).alias("Deaths"))
+"""
+j.push_example(*s.split("\n")[1:3])
 
 # s = """
 # ## on data | group by 'Country/Region' apply mean on 'Confirmed' as 'Mean Confirmed'

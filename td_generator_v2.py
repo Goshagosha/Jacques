@@ -164,7 +164,7 @@ def generate(length, redundancy):
         lines[line] = dsl
 
     file_name = f"L{str(length)}_R{str(redundancy)}.py"
-    with open('output/' + file_name, "w") as f:
+    with open('training_examples/blank/' + file_name, "w") as f:
         for line, dsl in lines.items():
             f.write('# ' + line + '\n## ' + dsl + ' \n\n')
 

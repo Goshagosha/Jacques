@@ -1,0 +1,215 @@
+2022-11-19 18:09:46.437 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	load from <ARG0> as csv_with_header
+	pl.read_csv(<ARG0>)
+2022-11-19 18:09:46.463 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	create dataframe with header 'Country/Region', 'Deaths'
+	pl.DataFrame({'Country/Region': [], 'Deaths': []})
+2022-11-19 18:09:46.469 | ERROR    | src.jacques.core.jacques:_register_rule:130 - Syntax error in rule: <class 'src.jacques.core.rule.Rule'>
+	create dataframe with header 'Country/Region', 'Deaths'
+	pl.DataFrame({'Country/Region': [], 'Deaths': []}), skipping
+2022-11-19 18:09:46.579 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	join <ARG0> <ARG1> on <ARG2>
+	<PIPE>.join(<ARG1>, on=<ARG2>, how=<ARG0>)
+2022-11-19 18:09:46.583 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	head <ARG0>
+	<PIPE>.head(<ARG0>)
+2022-11-19 18:09:46.591 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	rename columns <ARG0> to <ARG1>
+	<PIPE>.rename({<ARG0>: <ARG1>})
+2022-11-19 18:09:46.598 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	apply min on <ARG0> as <ARG1>
+	<PIPE>.agg(pl.min(<ARG0>).alias(<ARG1>))
+2022-11-19 18:09:46.604 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	count
+	<PIPE>.shape[0]
+2022-11-19 18:09:46.744 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	show
+	print(<PIPE>)
+2022-11-19 18:09:46.790 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	on <ARG0>
+	<ARG0>
+2022-11-19 18:09:46.791 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	group by <ARG0>
+	<PIPE>.groupby(<ARG0>)
+2022-11-19 18:09:46.794 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	sort by <ARG0> descending
+	<PIPE>.sort(<ARG0>, reverse=True)
+2022-11-19 18:09:46.799 | ERROR    | src.jacques.core.rule_synthesizer:_from_match:52 - Error while parsing AST for
+<PIPE>.filter(pl.col('SNo') > 100)
+in a match.
+2022-11-19 18:09:46.800 | INFO     | src.jacques.core.jacques:except_match:67 - Added to exceptions:
+	(?P<pipe>.*)\.filter\(pl\.col\('SNo'\)\ >\ 100\)
+2022-11-19 18:09:46.802 | INFO     | src.jacques.core.jacques:except_match:67 - Added to exceptions:
+	pl\.col\('SNo'\)
+2022-11-19 18:09:46.803 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: None
+2022-11-19 18:09:46.807 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	select columns <LST0>
+	<PIPE>.select[<LST0>]
+2022-11-19 18:09:46.810 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	describe
+	<PIPE>.describe()
+2022-11-19 18:09:46.913 | ERROR    | src.jacques.core.rule_synthesizer:_from_match:52 - Error while parsing AST for
+<PIPE>.with_column((pl.col('Confirmed') - pl.col('Recovered')).alias('Deaths'))
+in a match.
+2022-11-19 18:09:46.915 | INFO     | src.jacques.core.jacques:except_match:67 - Added to exceptions:
+	(?P<pipe>.*)\.with_column\(\(pl\.col\('Confirmed'\)\ \-\ pl\.col\('Recovered'\)\)\.alias\('Deaths'\)\)
+2022-11-19 18:09:46.917 | INFO     | src.jacques.core.jacques:except_match:67 - Added to exceptions:
+	\(pl\.col\('Confirmed'\)\ \-\ pl\.col\('Recovered'\)\)\.alias\('Deaths'\)
+2022-11-19 18:09:46.919 | INFO     | src.jacques.core.jacques:except_match:67 - Added to exceptions:
+	pl\.col\('Confirmed'\)
+2022-11-19 18:09:46.921 | INFO     | src.jacques.core.jacques:except_match:67 - Added to exceptions:
+	pl\.col\('Recovered'\)
+2022-11-19 18:09:46.923 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: None
+2022-11-19 18:09:46.932 | ERROR    | src.jacques.core.rule_synthesizer:_from_match:52 - Error while parsing AST for
+<PIPE>.apply(lambda row: tuple(['Deaths' if x == 'Confirmed' else x for x in row]))
+in a match.
+2022-11-19 18:09:46.938 | INFO     | src.jacques.core.jacques:except_match:67 - Added to exceptions:
+	(?P<pipe>.*)\.apply\(lambda\ row:\ tuple\(\['Deaths'\ if\ x\ ==\ 'Confirmed'\ else\ x\ for\ x\ in\ row\]\)\)
+2022-11-19 18:09:46.940 | INFO     | src.jacques.core.jacques:except_match:67 - Added to exceptions:
+	tuple\(\['Deaths'\ if\ x\ ==\ 'Confirmed'\ else\ x\ for\ x\ in\ row\]\)
+2022-11-19 18:09:46.942 | INFO     | src.jacques.core.jacques:except_match:67 - Added to exceptions:
+	x
+2022-11-19 18:09:46.945 | INFO     | src.jacques.core.jacques:except_match:67 - Added to exceptions:
+	x
+2022-11-19 18:09:46.946 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: None
+2022-11-19 18:09:46.959 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	show schema
+	print(<PIPE>.schema)
+2022-11-19 18:09:47.053 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	apply max on <ARG0> as <ARG1>
+	<PIPE>.agg(pl.max(<ARG0>).alias(<ARG1>))
+2022-11-19 18:09:47.126 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	drop duplicates
+	<PIPE>.unique()
+2022-11-19 18:09:47.130 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	union <ARG0>
+	<PIPE>.union(<ARG0>)
+2022-11-19 18:09:47.293 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	apply sum on <ARG0> as <ARG1>
+	<PIPE>.agg(pl.sum(<ARG0>).alias(<ARG1>))
+2022-11-19 18:09:47.324 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	save to <ARG0> as json
+	<PIPE>.to_json(<ARG0>)
+2022-11-19 18:09:47.761 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	drop columns <ARG0>
+	<PIPE>.drop(<ARG0>)
+2022-11-19 18:09:47.932 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	sort by <ARG0> ascending
+	<PIPE>.sort(<ARG0>, reverse=False)
+2022-11-19 18:09:47.939 | INFO     | src.jacques.core.jacques:_add_to_ruleset:110 - Conditional rule: <class 'src.jacques.core.rule.ConditionalRule'>
+	sort by <ARG0> <CHO0>
+	<PIPE>.sort(<ARG0>, reverse=True)
+	<PIPE>.sort(<ARG0>, reverse=False)
+2022-11-19 18:09:48.205 | ERROR    | src.jacques.core.rule_synthesizer:_from_match:52 - Error while parsing AST for
+<PIPE>.filter(pl.col('SNo') > 100)
+in a match.
+2022-11-19 18:09:48.207 | INFO     | src.jacques.core.jacques:except_match:67 - Added to exceptions:
+	(?P<pipe>.*)\.filter\(pl\.col\('SNo'\)\ >\ 100\)
+2022-11-19 18:09:48.208 | INFO     | src.jacques.core.jacques:except_match:67 - Added to exceptions:
+	pl\.col\('SNo'\)
+2022-11-19 18:09:48.208 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: None
+2022-11-19 18:09:48.310 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: <class 'src.jacques.core.rule.Rule'>
+	apply mean on <ARG0> as <ARG1>
+	<PIPE>.agg(pl.mean(<ARG0>).alias(<ARG1>))
+2022-11-19 18:09:48.447 | ERROR    | src.jacques.core.rule_synthesizer:_from_match:52 - Error while parsing AST for
+<PIPE>.with_column((pl.col('Confirmed') - pl.col('Recovered')).alias('Deaths'))
+in a match.
+2022-11-19 18:09:48.448 | INFO     | src.jacques.core.jacques:except_match:67 - Added to exceptions:
+	(?P<pipe>.*)\.with_column\(\(pl\.col\('Confirmed'\)\ \-\ pl\.col\('Recovered'\)\)\.alias\('Deaths'\)\)
+2022-11-19 18:09:48.449 | INFO     | src.jacques.core.jacques:except_match:67 - Added to exceptions:
+	\(pl\.col\('Confirmed'\)\ \-\ pl\.col\('Recovered'\)\)\.alias\('Deaths'\)
+2022-11-19 18:09:48.450 | INFO     | src.jacques.core.jacques:except_match:67 - Added to exceptions:
+	pl\.col\('Confirmed'\)
+2022-11-19 18:09:48.452 | INFO     | src.jacques.core.jacques:except_match:67 - Added to exceptions:
+	pl\.col\('Recovered'\)
+2022-11-19 18:09:48.453 | INFO     | src.jacques.core.rule_synthesizer:from_example:34 - Generated rule: None
+2022-11-19 18:09:49.020 | INFO     | src.jacques.core.jacques:process_all_examples:170 - 21 rules generated.
+2022-11-19 18:09:49.023 | INFO     | src.jacques.core.jacques:process_all_examples:171 - Examples not exhausted: 1
+2022-11-19 18:09:49.024 | INFO     | src.jacques.core.jacques:process_all_examples:173 - <class 'src.jacques.core.example.Example'>
+	create dataframe with header 'Country/Region', 'Deaths' | replace 'Confirmed' with 'Deaths' | union only_country_deaths | save to 'output.csv' as csv
+	pl.concat([pl.DataFrame({'Country/Region':[], 'Deaths':[]}).apply(lambda row: tuple(['Deaths' if x == 'Confirmed' else x for x in row])), only_country_deaths]).to_csv('output.csv')
+2022-11-19 18:09:49.024 | INFO     | src.jacques.core.jacques:process_all_examples:174 - Excepted due to parsing errors: 4
+2022-11-19 18:09:49.025 | INFO     | src.jacques.core.jacques:process_all_examples:176 - <class 'src.jacques.core.example.Example'>
+	on data | group by 'Country/Region' | rename columns 'Confirmed' to 'Deaths' | sort by 'Confirmed' descending | select rows 'SNo' > 100 | select columns 'SNo', 'ObservationDate' | describe
+	data.groupby("Country/Region").rename({'Confirmed': 'Deaths'}).sort("Confirmed", reverse=True).filter(pl.col("SNo") > 100).select[["SNo", "ObservationDate"]].describe()
+2022-11-19 18:09:49.025 | INFO     | src.jacques.core.jacques:process_all_examples:176 - <class 'src.jacques.core.example.Example'>
+	on data | drop columns 'Confirmed' | apply max on 'Confirmed' as 'Max Confirmed' | append column 'Confirmed' - 'Recovered' as 'Deaths' | join inner only_country_deaths on 'Country/Region' | replace 'Confirmed' with 'Deaths' | show schema
+	print(data.drop("Confirmed").agg(pl.max("Confirmed").alias("Max Confirmed")).with_column((pl.col("Confirmed") - pl.col("Recovered")).alias("Deaths")).join(only_country_deaths, on="Country/Region", how="inner").apply(lambda row: tuple(['Deaths' if x == 'Confirmed' else x for x in row])).schema)
+2022-11-19 18:09:49.028 | INFO     | src.jacques.core.jacques:process_all_examples:176 - <class 'src.jacques.core.example.Example'>
+	create dataframe with header 'Country/Region', 'Deaths' | apply sum on 'Confirmed' as 'Total Confirmed' | drop duplicates | select rows 'SNo' > 100 | save to 'output.json' as json
+	pl.DataFrame({'Country/Region':[], 'Deaths':[]}).agg(pl.sum("Confirmed").alias("Total Confirmed")).unique().filter(pl.col("SNo") > 100).to_json('output.json')
+2022-11-19 18:09:49.029 | INFO     | src.jacques.core.jacques:process_all_examples:176 - <class 'src.jacques.core.example.Example'>
+	on data | apply sum on 'Confirmed' as 'Total Confirmed' | head 10 | append column 'Confirmed' - 'Recovered' as 'Deaths' | apply mean on 'Confirmed' as 'Mean Confirmed' | count | show
+	print(data.agg(pl.sum("Confirmed").alias("Total Confirmed")).head(10).with_column((pl.col("Confirmed") - pl.col("Recovered")).alias("Deaths")).agg(pl.mean("Confirmed").alias("Mean Confirmed")).shape[0])
+2022-11-19 18:09:49.030 | INFO     | src.jacques.core.jacques:process_all_examples:177 - Rules:
+2022-11-19 18:09:49.032 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	load from <ARG0> as csv_with_header
+	pl.read_csv(<ARG0>)
+2022-11-19 18:09:49.032 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	create dataframe with header 'Country/Region', 'Deaths'
+	pl.DataFrame({'Country/Region': [], 'Deaths': []})
+2022-11-19 18:09:49.033 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	join <ARG0> <ARG1> on <ARG2>
+	<PIPE>.join(<ARG1>, on=<ARG2>, how=<ARG0>)
+2022-11-19 18:09:49.035 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	head <ARG0>
+	<PIPE>.head(<ARG0>)
+2022-11-19 18:09:49.037 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	rename columns <ARG0> to <ARG1>
+	<PIPE>.rename({<ARG0>: <ARG1>})
+2022-11-19 18:09:49.039 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	apply min on <ARG0> as <ARG1>
+	<PIPE>.agg(pl.min(<ARG0>).alias(<ARG1>))
+2022-11-19 18:09:49.040 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	count
+	<PIPE>.shape[0]
+2022-11-19 18:09:49.041 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	show
+	print(<PIPE>)
+2022-11-19 18:09:49.043 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	on <ARG0>
+	<ARG0>
+2022-11-19 18:09:49.044 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	group by <ARG0>
+	<PIPE>.groupby(<ARG0>)
+2022-11-19 18:09:49.045 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.ConditionalRule'>
+	sort by <ARG0> <CHO0>
+	<PIPE>.sort(<ARG0>, reverse=True)
+	<PIPE>.sort(<ARG0>, reverse=False)
+2022-11-19 18:09:49.046 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	select columns <LST0>
+	<PIPE>.select[<LST0>]
+2022-11-19 18:09:49.047 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	describe
+	<PIPE>.describe()
+2022-11-19 18:09:49.048 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	show schema
+	print(<PIPE>.schema)
+2022-11-19 18:09:49.049 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	apply max on <ARG0> as <ARG1>
+	<PIPE>.agg(pl.max(<ARG0>).alias(<ARG1>))
+2022-11-19 18:09:49.051 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	drop duplicates
+	<PIPE>.unique()
+2022-11-19 18:09:49.053 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	union <ARG0>
+	<PIPE>.union(<ARG0>)
+2022-11-19 18:09:49.054 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	apply sum on <ARG0> as <ARG1>
+	<PIPE>.agg(pl.sum(<ARG0>).alias(<ARG1>))
+2022-11-19 18:09:49.055 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	save to <ARG0> as json
+	<PIPE>.to_json(<ARG0>)
+2022-11-19 18:09:49.056 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	drop columns <ARG0>
+	<PIPE>.drop(<ARG0>)
+2022-11-19 18:09:49.057 | INFO     | src.jacques.core.jacques:process_all_examples:179 - <class 'src.jacques.core.rule.Rule'>
+	apply mean on <ARG0> as <ARG1>
+	<PIPE>.agg(pl.mean(<ARG0>).alias(<ARG1>))
+2022-11-19 18:09:49.059 | INFO     | __main__:<module>:50 - Expected rule 'create dataframe with header' not learned
+2022-11-19 18:09:49.062 | INFO     | __main__:<module>:58 - Expected 2 options for rule 'save to', but it is not ConditionalRule
+2022-11-19 18:09:49.064 | INFO     | __main__:<module>:50 - Expected rule 'select rows' not learned
+2022-11-19 18:09:49.066 | INFO     | __main__:<module>:58 - Expected 2 options for rule 'join', but it is not ConditionalRule
+2022-11-19 18:09:49.069 | INFO     | __main__:<module>:50 - Expected rule 'apply' not learned
+2022-11-19 18:09:49.070 | INFO     | __main__:<module>:50 - Expected rule 'replace' not learned
+2022-11-19 18:09:49.074 | INFO     | __main__:<module>:50 - Expected rule 'append column' not learned

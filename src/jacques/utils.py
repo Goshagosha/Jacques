@@ -73,7 +73,7 @@ def key_by_value(dict, value, compare_callback=None):
 
 
 def sanitize_whitespace_and_symbols(string: str) -> str:
-    return string.translate({ord(c): "_" for c in " !@#$%^&*()[]{};:,./<>?\|`~-=_+"})
+    return string.translate({ord(c): "_" for c in " !@#$%^&*()[]{};:,./<>?\\|`~-=_+"})
 
 
 def dict_to_string(dict: dict) -> str:

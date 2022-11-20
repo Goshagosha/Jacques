@@ -5,7 +5,7 @@ from loguru import logger
 from .core.rule import OverridenRule, RuleModel
 from .core.jacques import Jacques
 import uvicorn
-import argparse
+
 
 # only for incoming post
 class ExampleModel(BaseModel):

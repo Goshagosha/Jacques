@@ -1,6 +1,8 @@
 from __future__ import annotations
-from lib2to3.pgen2.token import NEWLINE
 from typing import Dict, List, Tuple
+from nldsl import CodeGenerator
+from loguru import logger
+
 from .nldsl_utils.nldsl_utils import (
     generate_function,
     generate_init_statement,
@@ -11,10 +13,7 @@ from .rule import ConditionalRule, OverridenRule, Rule
 from .rule_synthesizer import RuleSynthesizer
 from .example import Example
 from ..utils import sanitize
-from ..world_knowledge import *
-
-from nldsl import CodeGenerator
-from loguru import logger
+from .. import constants
 
 
 class Buffer:
@@ -55,9 +54,9 @@ class Jacques:
         self.heuristic_on = False
         self.except_matches = {}
 
-    def encountered(self, object):
-        if object not in self.encountered_objects:
-            self.encountered_objects.append(object)
+    def encountered(self, obj):
+        if obj not in self.encountered_objects:
+            self.encountered_objects.append(obj)
 
     def except_match(self, example_id: str, source_code_regex: str):
         if example_id not in self.except_matches:
@@ -69,14 +68,14 @@ class Jacques:
     def _generate_rules(self, example: Example) -> bool:
         rules = self._rule_synthesizer.from_example(example)
         _rules = []
-        for i in range(len(rules)):
+        for i, rule in enumerate(rules):
             repeated = False
             for j in range(i + 1, len(rules)):
-                if rules[i].__repr__() == rules[j].__repr__():
+                if repr(rule) == repr(rules[j]):
                     repeated = True
                     break
             if not repeated:
-                _rules.append(rules[i])
+                _rules.append(rule)
         for rule in _rules:
             self._register_rule(rule)
         return len(rules) > 0
@@ -95,30 +94,29 @@ class Jacques:
                 self.ruleset[rule.id] = rule
                 logger.info(f"Overriden rule: {self.ruleset[rule.id]}")
                 return rule
-            else:
-                raise ValueError
-        else:
-            old_rule = self.get_rule_by_name(rule.name)
-            if old_rule is not None:
-                try:
-                    if isinstance(old_rule, ConditionalRule):
-                        old_rule.add_option(rule)
-                        logger.info(f"Updated rule: {self.ruleset[old_rule.id]}")
-                        return old_rule
-                    else:
-                        self.ruleset[old_rule.id] = ConditionalRule(old_rule, rule)
-                        logger.info(f"Conditional rule: {self.ruleset[old_rule.id]}")
-                        return self.ruleset[old_rule.id]
-                except Exception as e:
-                    # If the new generated rule is the same as the old one,
-                    # the old one was not applied to the matrix, so we should
-                    # override the old one
-                    logger.error(e)
-                    logger.debug(f"Overriding rule {old_rule}")
-                    self.ruleset[old_rule.id] = rule
-            else:
-                self.ruleset[rule.id] = rule
+            raise ValueError
+        old_rule = self.get_rule_by_name(rule.name)
+        if old_rule is not None:
+            try:
+                if isinstance(old_rule, ConditionalRule):
+                    old_rule.add_option(rule)
+                    logger.info(f"Updated rule: {self.ruleset[old_rule.id]}")
+                    return old_rule
+                else:
+                    self.ruleset[old_rule.id] = ConditionalRule(old_rule, rule)
+                    logger.info(f"Conditional rule: {self.ruleset[old_rule.id]}")
+                    return self.ruleset[old_rule.id]
+            except Exception as exc:
+                # If the new generated rule is the same as the old one,
+                # the old one was not applied to the matrix, so we should
+                # override the old one
+                logger.error(exc)
+                logger.debug(f"Overriding rule {old_rule}")
+                self.ruleset[old_rule.id] = rule
                 return rule
+        else:
+            self.ruleset[rule.id] = rule
+            return rule
 
     def _register_rule(self, rule: Rule | OverridenRule):
         rule = self._add_to_ruleset(rule)
@@ -131,8 +129,10 @@ class Jacques:
             return
         try:
             self.code_generator.remove_function(rule.name)
-            logger.debug(f'Removed old function "{rule.name}" from code generator before updating')
-        except KeyError as e:
+            logger.debug(
+                f'Removed old function "{rule.name}" from code generator before updating'
+            )
+        except KeyError:
             pass
         self.code_generator.register_function(function, rule.name)
 
@@ -173,7 +173,9 @@ class Jacques:
             logger.info(example)
         logger.info("Excepted due to parsing errors: {}", len(self.except_matches))
         for example_id in self.except_matches:
-            logger.info(filter(lambda e: e.id == example_id, self.exhausted_examples).__next__())
+            logger.info(
+                next(filter(lambda e: e.id == example_id, self.exhausted_examples))
+            )
         logger.info("Rules:")
         for rule in self.ruleset.values():
             logger.info(rule)
@@ -192,31 +194,33 @@ class Jacques:
         self.code_generator = CodeGenerator(recommend=False)
 
     def push_example(self, dsl_string: str, code_string: str) -> None:
-        if dsl_string.startswith(EVAL_PIPE_PREFIX):
-            dsl_string = sanitize(dsl_string[len(EVAL_PIPE_PREFIX) :])
+        if dsl_string.startswith(constants.EVAL_PIPE_PREFIX):
+            dsl_string = sanitize(dsl_string[len(constants.EVAL_PIPE_PREFIX) :])
         self.examples.append(Example(self, dsl_string, code_string))
 
     def push_examples_from_file(self, path: str) -> None:
         buffer = Buffer()
-        with open(path, "r") as file:
+        with open(path, "r", encoding="utf-8") as file:
             for line in file.readlines():
-                if line.startswith(EVAL_PIPE_PREFIX):
-                    current_dsl = sanitize(line[len(EVAL_PIPE_PREFIX) :])
+                if line.startswith(constants.EVAL_PIPE_PREFIX):
+                    current_dsl = sanitize(line[len(constants.EVAL_PIPE_PREFIX) :])
                     if not buffer.is_empty:
                         dsl, code = buffer.flush()
-                        if dsl.startswith(DSL_INIT_STATEMENT):
+                        if dsl.startswith(constants.DSL_INIT_STATEMENT):
                             self.push_init_statement(dsl, code)
                         else:
                             self.push_example(dsl, code)
 
                     buffer.push_dsl(current_dsl)
-                elif line.startswith(COMMENT_PREFIX) or line == NEWLINE:
+                elif (
+                    line.startswith(constants.COMMENT_PREFIX) or line == constants.NEWLINE
+                ):
                     continue
                 else:
                     buffer.push_code(line)
             if not buffer.is_empty:
                 dsl, code = buffer.flush()
-                if dsl.startswith(DSL_INIT_STATEMENT):
+                if dsl.startswith(constants.DSL_INIT_STATEMENT):
                     self.push_init_statement(dsl, code)
                 else:
                     self.push_example(dsl, code)

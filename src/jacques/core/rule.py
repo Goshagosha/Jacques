@@ -1,22 +1,21 @@
 from __future__ import annotations
 import ast
 from functools import reduce
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING, Dict, List
 from ..ast.python_ast_utils import (
     JacquesUnparser,
     MissingArgumentFixer,
     ToFunctionUnparser,
 )
-from ..ast.jacques_ast_utils import *
-from .arguments import _Argument, Choicleton, IdProvider
-from .nldsl_utils._grammar import _grammar
-from ..world_knowledge import *
+# from ..ast.jacques_ast_utils import *
+from .arguments import IdProvider
+from ..constants import NEWLINE, INDENT
 from pydantic import BaseModel
 from loguru import logger
 from uuid import uuid4 as uuid
 
 if TYPE_CHECKING:
-    from ..ast.jacques_ast import DslJAST
+    from ..ast.jacques_ast import DslJAST, CodeJAST
 
 
 class RuleModel(BaseModel):
