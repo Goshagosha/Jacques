@@ -8,7 +8,7 @@ Web hosted documenration is available at https://goshagosha.github.io/Jacques/mo
 The rest is supplied with `requirements.txt`
 
 # One click-demo
-```
+```sh
 git clone git@github.com:Goshagosha/Jacques.git  
 cd Jacques 
 python3.10 -m pip install -r requirements.txt
@@ -17,7 +17,7 @@ python3.10 demo.py
 
 # Getting started
 ## Building from source (Optional)
-```
+```sh
 python3.10 -m pip install -r requirements.txt
 python3.10 -m pip install build
 python3.10 -m build
@@ -29,41 +29,41 @@ You can grab a compiled wheel file from [releases](https://github.com/Goshagosha
 python3.10 -m pip install dist/jacques-1.0.0-py3-none-any.whl
 ```
 
-## Running Jacques
-```
+## Running Jacques in python
+```py
 from jacques import Jacques
 j = Jacques()
 ```
 To push individual example:
-```
+```py
 j.push_example(
     '## on data | select columns "Confirmed"',
     'data[["Confirmed"]]'
 )
 ```
 To push set of examples from a file:
-```
+```py
 j.push_examples_from_file(<path to the file>)
 ```
 Finally, to generate rules:
-```
+```py
 j.process_all_examples()
 ```
 
 To see the list of generated rules:
-```
+```py
 for rule in j.ruleset.values():
     print(rule)
 ```
 
 ... or export generated rules into standalone (NLDSL-dependant) script
-```
+```py
 j.export_rules()
 ```
 
 ## Running server
 To host a backend server for your purposes
-```
+```py
 from jacques import JacquesServer
 server = JacquesServer(host="127.0.0.1", port=8000)
 ```
@@ -78,7 +78,7 @@ If you wish to confirm our findings, we provide a bash script `research_check.sh
 Finally, aforementioned notebook contains full scripts used to generate latex tables and pyplot charts from CSV files, which process can be executed again any time. (Recent VSCode versions should support notebooks out-of-the-box).
 
 # Statistics
-```
+```sh
 >> python3.10 -m pylint --good-names=i,j,k,id,e,_,y,x,m,v --disable=E0402 src
 ...
 Your code has been rated at 8.82/10
