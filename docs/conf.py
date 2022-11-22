@@ -30,7 +30,7 @@ sys.path.insert(
 )
 sys.path.insert(0, devdir + "/src")
 
-extensions = ["sphinx.ext.autodoc"]
+extensions = ["sphinx.ext.autodoc", "sphinx.ext.githubpages"]
 
 templates_path = ["_templates"]
 exclude_patterns = [
