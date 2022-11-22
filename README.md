@@ -24,6 +24,7 @@ python3.10 -m build
 ```
 
 ## Installing a release
+You can grab a compiled wheel file from [releases](https://github.com/Goshagosha/Jacques/releases/tag/v1.0.0)
 ```
 python3.10 -m pip install dist/jacques-1.0.0-py3-none-any.whl
 ```
