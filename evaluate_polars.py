@@ -13,11 +13,12 @@ def no_latex(record):
 
 rules_to_learn = {
     "load from": 1,
-    "create dataframe from": 1,
+    # "create dataframe from": 1,
+    "create dataframe with header": 1,
     "save to": 2,
     "union": 1,
-    "difference": 1,
-    "intersection": 1,
+    # "difference": 1,
+    # "intersection": 1,
     "select columns": 1,
     "select rows": 1,
     "drop columns": 1,

@@ -242,9 +242,9 @@ class ConditionalRule(Rule):
             accumulated_nldsl_code_mods.extend(nldsl_code_mods)
         accumulated_nldsl_code_mods = list(set(accumulated_nldsl_code_mods))
         source = NEWLINE
-        for choice, source in sources.items():
+        for choice, source_bit in sources.items():
             # pylint: disable=line-too-long # this is the most reliable way to handle the source-code-as-string magic
-            source += f'{INDENT + NEWLINE}elif {self.nldsl_code_choice} == "{choice}":{NEWLINE + INDENT}return f"{source}"'
+            source += f'{INDENT + NEWLINE}elif {self.nldsl_code_choice} == "{choice}":{NEWLINE + INDENT}return f"{source_bit}"'
         source = source[5:]
         return f"{NEWLINE.join(accumulated_nldsl_code_mods)}{NEWLINE}{source}"
 
