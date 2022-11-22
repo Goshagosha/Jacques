@@ -1,3 +1,4 @@
+"""Constants for Jacques."""
 EVAL_PIPE_PREFIX = "##"
 DEFINE_PIPE_PREFIX = "#!"
 COMMENT_PREFIX = "#"

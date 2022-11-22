@@ -1,16 +1,18 @@
 import os
 from src.jacques.core.jacques import Jacques
-from jacques.constants import *
+from src.jacques.constants import *
 from loguru import logger
+
 
 def no_latex(record):
     try:
-        return not record['extra']['latex']
+        return not record["extra"]["latex"]
     except KeyError:
         return True
 
+
 try:
-    os.remove('logs/jacques.log')
+    os.remove("logs/jacques.log")
 except FileNotFoundError:
     pass
 logger._core.handlers[0]._filter = no_latex
@@ -28,11 +30,11 @@ data
 """
 j.push_example(*s.split("\n")[1:3])
 
-s = """
-## on data | append column 'Confirmed' - 'Recovered' as 'Deaths' 
-data.with_column((pl.col("Confirmed") - pl.col("Recovered")).alias("Deaths"))
-"""
-j.push_example(*s.split("\n")[1:3])
+# s = """
+# ## on data | append column 'Confirmed' - 'Recovered' as 'Deaths'
+# data.with_column((pl.col("Confirmed") - pl.col("Recovered")).alias("Deaths"))
+# """
+# j.push_example(*s.split("\n")[1:3])
 
 # s = """
 # ## on data | group by 'Country/Region' apply mean on 'Confirmed' as 'Mean Confirmed'
@@ -60,12 +62,12 @@ j.push_example(*s.split("\n")[1:3])
 
 # j.push_examples_from_file("training_examples/pandas/no_logical_inference.py")
 
-# #######################################################
-# s = """
-# ## data = load from 'covid_19_data.csv' as csv_with_header
-# data = pd.read_csv("covid_19_data.csv")
-# """
-# j.push_example(*s.split("\n")[1:3])
+#######################################################
+s = """
+## data = load from 'covid_19_data.csv' as csv_with_header
+data = pd.read_csv("covid_19_data.csv")
+"""
+j.push_example(*s.split("\n")[1:3])
 
 # """
 # j.push_example(*s.split("\n")[1:3])
@@ -80,20 +82,20 @@ j.push_example(*s.split("\n")[1:3])
 # """
 # j.push_example(*s.split("\n")[1:3])
 # ####################################################
-# s = """ 
+# s = """
 # ## on data | select rows 'SNo' > 100
 # data[("SNo" > 100)]
 # """
 # j.push_example(*s.split("\n")[1:3])
 # ######################################################
-# s = """ 
+# s = """
 # ## on data | select rows 'SNo' > 100
 # data[("SNo" > 100)]
 # """
 # j.push_example(*s.split("\n")[1:3])
 ######################################################
 # # s = """
-# # ## on data | union other_df 
+# # ## on data | union other_df
 # # pd.concat([data, other_df])
 # """
 # j.push_example(*s.split("\n")[1:3])
@@ -126,3 +128,4 @@ j.push_example(*s.split("\n")[1:3])
 # #######################################################
 
 j.process_all_examples()
+j.export_rules()

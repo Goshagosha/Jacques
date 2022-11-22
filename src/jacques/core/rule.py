@@ -1,18 +1,20 @@
+"""This module defines the Rule class and its variations."""
 from __future__ import annotations
 import ast
 from functools import reduce
 from typing import TYPE_CHECKING, Dict, List
+from uuid import uuid4 as uuid
+from pydantic import BaseModel
+from loguru import logger
 from ..ast.python_ast_utils import (
     JacquesUnparser,
     MissingArgumentFixer,
     ToFunctionUnparser,
 )
+
 # from ..ast.jacques_ast_utils import *
-from .arguments import IdProvider
+from .arguments import _IdProvider
 from ..constants import NEWLINE, INDENT
-from pydantic import BaseModel
-from loguru import logger
-from uuid import uuid4 as uuid
 
 if TYPE_CHECKING:
     from ..ast.jacques_ast import DslJAST, CodeJAST
@@ -26,11 +28,11 @@ class RuleModel(BaseModel):
 
 
 class OverridenRule:
-    def __init__(self, name, dsl, code, id: str = None) -> None:
+    def __init__(self, name, dsl, code, rule_id: str = None) -> None:
         self.name = name
         self.dsl = dsl
         self.code = code
-        self.id = id if id else uuid().hex
+        self.id = rule_id if rule_id else uuid().hex
 
     class OverridenRuleModel(BaseModel):
         id: str
@@ -46,7 +48,9 @@ class OverridenRule:
             id=self.id, name=self.name, dsl=self.dsl, code=self.code
         )
 
-    def from_model(model: OverridenRuleModel) -> OverridenRule:
+    def from_model(  # pylint: disable=no-self-argument # this is constructor
+        model: OverridenRuleModel,
+    ) -> OverridenRule:
         return OverridenRule(model.name, model.dsl, model.code, model.id)
 
     def __str__(self):
@@ -58,17 +62,20 @@ class Rule:
         self,
         dsl_jast: DslJAST,
         code_jast: CodeJAST,
-        id_provider: IdProvider,
-        id: str = None,
+        id_provider: _IdProvider,
+        rule_id: str = None,
     ) -> None:
         self.dsl_jast = dsl_jast
         self.code_jast = code_jast
         self.id_provider = id_provider
-        self.id = id if id else uuid().hex
+        self.id = rule_id if rule_id else uuid().hex
 
     def to_model(self) -> RuleModel:
         return RuleModel(
-            name=self.name, dsl=self.dsl_source, code=self.code_source, id=self.id
+            name=self.name,
+            dsl=self.dsl_source,
+            code=self.code_source,
+            id=self.id,
         )
 
     def to_overriden_rule_model(self):
@@ -106,7 +113,9 @@ class Rule:
 
     @property
     def nldsl_code(self) -> str:
-        source, nldsl_code_mods = ToFunctionUnparser().to_function(self.code_tree)
+        source, nldsl_code_mods = ToFunctionUnparser().to_function(
+            self.code_tree
+        )
         return f'{NEWLINE.join(nldsl_code_mods)}{NEWLINE}return f"{source}"'
 
     @property
@@ -125,7 +134,7 @@ class Rule:
 
 
 class ConditionalRule(Rule):
-    def __init__(
+    def __init__(  # pylint: disable=super-init-not-called # we intend to override
         self,
         rule_1: Rule,
         rule_2: Rule,
@@ -158,30 +167,30 @@ class ConditionalRule(Rule):
 
     @property
     def regex_code(self) -> str:
-        def splitter(s: str) -> List[str]:
+        def splitter(string: str) -> List[str]:
             result = []
-            next = ""
-            for c in s:
+            next_token = ""
+            for c in string:
                 if c.isalpha():
-                    next += c
+                    next_token += c
                 else:
-                    if next:
-                        result.append(next)
-                        next = ""
+                    if next_token:
+                        result.append(next_token)
+                        next_token = ""
                     result.append(c)
-            if next:
-                result.append(next)
+            if next_token:
+                result.append(next_token)
             return result
 
         regexes_of_code = [
             splitter(code_jast.regex) for code_jast in self.code_jasts.values()
         ]
 
-        def compresser(accu, next):
+        def compresser(accu, regex):
             REGEX_TOKEN = "REGEX_TOKEN"
             result = []
             for i, token in enumerate(accu):
-                if token == next[i]:
+                if token == regex[i]:
                     result += [token]
                 else:
                     result += [REGEX_TOKEN]
@@ -193,7 +202,10 @@ class ConditionalRule(Rule):
 
     @property
     def code_trees(self) -> Dict[str | ast.AST]:
-        return {choice: self.code_jasts[choice].code_ast for choice in self.code_jasts}
+        return {
+            choice: code_jast.code_ast
+            for choice, code_jast in self.code_jasts.items()
+        }
 
     def _fix_code_asts(self) -> None:
         for choice in self.code_jasts:
@@ -230,8 +242,9 @@ class ConditionalRule(Rule):
             accumulated_nldsl_code_mods.extend(nldsl_code_mods)
         accumulated_nldsl_code_mods = list(set(accumulated_nldsl_code_mods))
         source = NEWLINE
-        for each in sources:
-            source += f'{INDENT + NEWLINE}elif {self.nldsl_code_choice} == "{each}":{NEWLINE + INDENT}return f"{sources[each]}"'
+        for choice, source in sources.items():
+            # pylint: disable=line-too-long # this is the most reliable way to handle the source-code-as-string magic
+            source += f'{INDENT + NEWLINE}elif {self.nldsl_code_choice} == "{choice}":{NEWLINE + INDENT}return f"{source}"'
         source = source[5:]
         return f"{NEWLINE.join(accumulated_nldsl_code_mods)}{NEWLINE}{source}"
 

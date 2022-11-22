@@ -1,3 +1,4 @@
+"""This module provides abstract base classes that are to be overriden if one wishes to cover new argument types. Also it contains specific implementations for most common cases."""
 from abc import ABC, abstractmethod
 from ast import AST
 import ast
@@ -5,7 +6,7 @@ from typing import Any
 from ..utils import id_generator, is_float
 
 
-class IdProvider:
+class _IdProvider:  # pylint: disable=too-few-public-methods # it's a generator
     def __init__(self) -> None:
         ...
 
@@ -20,13 +21,21 @@ class IdProvider:
             return super().__getattribute__(__name)
 
 
-class ListIndex:
+class _ListIndex:  # pylint: disable=too-few-public-methods # it's a dataclass
     def __init__(self, index):
         self.index = index
 
 
-class _Argument(ABC):
+class _Argument(
+    ABC
+):  # pylint: disable=too-few-public-methods # it's an abstract base dataclass
     class DSL(ABC):
+        """Abstract class for DSL arguments. Extend it to add new formats of DSL arguments.
+        Must implement relaxed_equal method.
+        Must implement __str__ method.
+        :param value: value of the argument
+        :param index_in_parent: index of the argument in the parent list"""
+
         def __init__(self, value: Any, index_in_parent: int):
             self.value = value
             self.index_in_parent = index_in_parent
@@ -37,7 +46,9 @@ class _Argument(ABC):
 
         @abstractmethod
         def relaxed_equal(self, other) -> bool:
-            ...
+            """Must return True if other is matches self to a reasonable extent
+
+            :param other: the value to compare to"""
 
         def __eq__(self, __o: object) -> bool:
             if isinstance(__o, str):
@@ -47,40 +58,55 @@ class _Argument(ABC):
             return self.value == __o.value
 
     class Placeholder(ABC, AST):
+        """Abstract class for placeholders. Extend it to add new formats of placeholders.
+
+        :param examples: examples of the placeholder
+        :param placeholding_for: the AST node that the placeholder is for
+        :param id_factory: the factory that provides the id generator for the placeholder
+        :base_shorthand: the shorthand of the placeholder. Is a static field that should be overridden in subclasses"""
+
         base_shorthand: str
 
-        def _id_generator_ref(self, factory: IdProvider) -> id_generator:
+        def _id_generator_ref(self, factory: _IdProvider) -> id_generator:
             generator_name = (
-                self.__class__.__qualname__.split(".")[0].lower() + "_id_gen"
+                self.__class__.__qualname__.split(".", maxsplit=1)[0].lower()
+                + "_id_gen"
             )
-            return factory.__getattribute__(generator_name)
+            return getattr(factory, generator_name)
 
-        def __init__(self, id_factory: IdProvider, examples, placeholding_for: ast.AST):
-            id_generator = self._id_generator_ref(id_factory)
+        def __init__(
+            self, id_factory: _IdProvider, examples, placeholding_for: ast.AST
+        ):
+            id_generator = self._id_generator_ref(  # pylint: disable=redefined-outer-name # that's what this generator is for
+                id_factory
+            )
             self.id = next(id_generator)
             self.examples = examples
             self.placeholding_for = placeholding_for
 
         @property
         def shorthand(self):
+            """The shorthand of the placeholder. With a given placeholder e.g. INT and id==0, the shorthand is INT0. Used to distinguish placeholders in rules, and render them to logs or to register in NLDSL."""
             return self.base_shorthand + str(self.id)
 
         @property
         def nldsl_grammar_mod(self):
-            ...
+            """The grammar modification for the placeholder. Implement if the argument requires important NLDSL grammar logic."""
 
         @property
         def nldsl_code_mod(self):
-            ...
+            """The code modification for the placeholder. Implement if the argument requires important preprocessing in NLDSL function."""
 
         @property
         @abstractmethod
         def nldsl_code(self) -> str:
+            """How the placeholder should be rendered in NLDSL function, in the code section."""
             ...
 
         @property
         @abstractmethod
         def nldsl_dsl(self):
+            """How the placeholder should be rendered in NLDSL function, in the grammar section."""
             ...
 
         @property
@@ -95,7 +121,9 @@ class _Argument(ABC):
             return f"<{self.shorthand.upper()}>"
 
 
-class Singleton(_Argument):
+class Singleton(
+    _Argument
+):  # pylint: disable=too-few-public-methods # it's a dataclass
     class DSL(_Argument.DSL):
         @property
         def is_in_quotes(self) -> bool:
@@ -130,7 +158,9 @@ class Singleton(_Argument):
 
         def relaxed_equal(self, other: str | int | float) -> bool:
             if isinstance(other, list):
-                return Listleton.DSL([self], self.index_in_parent).relaxed_equal(other)
+                return Listleton.DSL(
+                    [self], self.index_in_parent
+                ).relaxed_equal(other)
             return self.pure == other or self.value == other
 
     class Placeholder(_Argument.Placeholder):
@@ -149,9 +179,13 @@ class Choicleton(Singleton):
     class Placeholder(Singleton.Placeholder):
         base_shorthand = "cho"
 
-        def __init__(self, l_arg: Singleton.DSL, r_arg: Singleton.DSL, id_provider):
+        def __init__(  # pylint: disable=super-init-not-called # override the abstract method
+            self, l_arg: Singleton.DSL, r_arg: Singleton.DSL, id_provider
+        ):
             self.examples = [l_arg.value, r_arg.value]
-            id_generator = self._id_generator_ref(id_provider)
+            id_generator = self._id_generator_ref(  # pylint: disable=redefined-outer-name # that's what this generator is for
+                id_provider
+            )
             self.id = next(id_generator)
             self.choices = [l_arg.pure, r_arg.pure]
             self.linked = False
@@ -177,7 +211,9 @@ class Choicleton(Singleton):
             return self.regex
 
 
-class Listleton(_Argument):
+class Listleton(
+    _Argument
+):  # pylint: disable=too-few-public-methods # it's a dataclass
     class DSL(_Argument.DSL):
         def __str__(self) -> str:
             return ", ".join([str(x) for x in self.value])
@@ -187,21 +223,21 @@ class Listleton(_Argument):
                 if len(self.value) != len(other):
                     return False
                 match = True
-                for i in range(len(self.value)):
-                    match = match and self.value[i].relaxed_equal(other[i])
+                for i, val in enumerate(self.value):
+                    match = match and val.relaxed_equal(other[i])
                 return match
-            elif isinstance(other, str):
+            if isinstance(other, str):
                 if len(self.value) != 1:
                     return False
                 return self.value[0].relaxed_equal(other)
-            else:
-                return False
-                raise NotImplementedError
+            return False
 
     class Placeholder(_Argument.Placeholder):
         base_shorthand = "lst"
 
-        def __init__(self, id_factory: IdProvider, examples, placeholding_for: ast.AST):
+        def __init__(
+            self, id_factory: _IdProvider, examples, placeholding_for: ast.AST
+        ):
             super().__init__(id_factory, examples, placeholding_for)
             self.linked_choicleton = None
 
@@ -214,9 +250,7 @@ class Listleton(_Argument):
             result = ""
             if self.linked_choicleton is not None:
                 result += f'args["{self.shorthand}"], args["{self.linked_choicleton.shorthand}"] = zip(*args["{self.shorthand}"])\n'
-            result += (
-                f'args["{self.shorthand}"] = list_to_string(args["{self.shorthand}"])'
-            )
+            result += f'args["{self.shorthand}"] = list_to_string(args["{self.shorthand}"])'
             return result
 
         @property
@@ -269,51 +303,6 @@ class Operaton(_Argument):
         @property
         def nldsl_dsl(self):
             return f"!{self.shorthand}"
-
-
-class Dictleton(Singleton):
-    class Placeholder(Singleton.Placeholder):
-        base_shorthand = "dct"
-
-        def __init__(
-            self,
-            id_factory: IdProvider,
-            examples,
-        ):
-            self.value = []
-            super().__init__(id_factory, examples)
-
-        @property
-        def lhs(self) -> str:
-            return self.value[0]
-
-        @lhs.setter
-        def lhs(self, value: Singleton.Placeholder):
-            self.value[0] = value
-
-        @property
-        def rhs(self) -> str:
-            return self.value[1]
-
-        @rhs.setter
-        def rhs(self, value: Singleton.Placeholder):
-            self.value[1] = value
-
-        @property
-        def nldsl_dsl(self):
-            raise NotImplementedError("Dictleton does not have a DSL implementation")
-
-        @property
-        def nldsl_code_mod(self):
-            if isinstance(self.lhs, Singleton.Code):
-                lhs = f"{self.lhs.value}"
-            else:
-                lhs = f"args['{self.lhs.shorthand}']"
-            if isinstance(self.rhs, Singleton.Code):
-                rhs = f"{self.rhs.value}"
-            else:
-                rhs = f"args['{self.rhs.shorthand}']"
-            return f'args["{self.shorthand}"] = {{{lhs} : {rhs}}}'
 
 
 class Pipe(AST):

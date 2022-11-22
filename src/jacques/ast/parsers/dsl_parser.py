@@ -1,9 +1,9 @@
 from copy import deepcopy
+from typing import List
 import re
-from ...ast.jacques_ast import *
+from ..jacques_ast import DslJAST
 from ...core.arguments import _Argument, Singleton, Listleton, Operaton
 from ...core.jacques_member import JacquesMember
-from uuid import uuid4 as uuid
 
 from ...utils import sanitize
 
@@ -24,14 +24,14 @@ class _ListBuffer:
         return to_return
 
 
-class DslParser(JacquesMember):
+class DslParser(JacquesMember): # pylint: disable=too-few-public-methods
     def parse(self, source_string: str) -> DslJAST:
         source_string = sanitize(source_string)
         jast = DslJAST()
         depth = 0
         jast_in_focus = jast
         query_sequence = source_string.split(" | ")
-        if (" = ") in query_sequence[0]:
+        if " = " in query_sequence[0]:
             split = query_sequence[0].split(" = ")
             query_sequence[0] = split[1]
             self.jacques.encountered(split[0])
@@ -55,7 +55,7 @@ class DslParser(JacquesMember):
     ) -> List[_Argument.DSL | list]:
         source_string = sanitize(source_string)
         split = re.findall(
-            "([\w|\/|.]+|'[\w|\/|,|\s|.]+',|'[\w|\/|,|\s|.]+'|[<>=\-+]+)", source_string
+            r"([\w|/|.]+|'[\w|/|,|\s|.]+',|'[\w|/|,|\s|.]+'|[<>=\-+]+)", source_string
         )
 
         result = []
@@ -67,10 +67,10 @@ class DslParser(JacquesMember):
         for each in split:
             if operation_is_on:
                 buffer.append(each)
-                l, c, r = buffer.flush()
+                l, c, r = buffer.flush() # pylint: disable=invalid-name
                 result.append(Operaton.DSL(l, c, r, len(result)))
                 operation_is_on = False
-            elif re.match("[+\-\/*%]|[><]|[><=]\{2\}", each):
+            elif re.match(r"[+-/*%]|[><]|[><=]{2}", each):
                 buffer.append(result.pop().value)
                 buffer.append(each)
                 operation_is_on = True

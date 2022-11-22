@@ -1,8 +1,8 @@
 import ast
-from typing import Any
-from ...ast.jacques_ast import *
-from ...core.jacques_member import JacquesMember
 from ast import iter_child_nodes
+from typing import Any
+from ...ast.jacques_ast import CodeJAST
+from ...core.jacques_member import JacquesMember
 
 
 ASSIGN_COMMAND_NAME = "assign"
@@ -37,31 +37,32 @@ class JastBuilder(ast.NodeTransformer):
     # special cases:
     # ast.Name
 
-    def _resolve_command_name(self, node: AST) -> str:
+    def _resolve_command_name(
+        self, node: ast.AST
+    ) -> str:  # pylint: disable=too-many-return-statements
         if isinstance(node, ast.Assign):
             return ASSIGN_COMMAND_NAME
-        elif isinstance(node, ast.Load):
+        if isinstance(node, ast.Load):
             return LOAD_COMMAND_NAME
-        elif isinstance(node, ast.Subscript):
+        if isinstance(node, ast.Subscript):
             return SUBSCRIPT_COMMAND_NAME
-        elif isinstance(node, (ast.Import, ast.ImportFrom)):
+        if isinstance(node, (ast.Import, ast.ImportFrom)):
             return IMPORT_COMMAND_NAME
-        elif isinstance(node, ast.Call):
+        if isinstance(node, ast.Call):
             if isinstance(node.func, ast.Name):
                 return node.func.id
-            elif isinstance(node.func, ast.Attribute):
+            if isinstance(node.func, ast.Attribute):
                 return node.func.attr
-        elif isinstance(node, ast.Name):
+        if isinstance(node, ast.Name):
             return LOAD_COMMAND_NAME
-        else:
-            raise NotImplementedError
+        raise NotImplementedError
 
     def visit(self, node: ast.AST) -> Any:
         self.generic_visit(node, self.root_jast)
         return self.root_jast
 
     def generic_visit(self, node, parent_jast=None):
-        if isinstance(node, AST):
+        if isinstance(node, ast.AST):
             if isinstance(node, self.NODES_TO_PIPE):
                 command = self._resolve_command_name(node)
                 if self.root_jast is None:

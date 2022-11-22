@@ -1,3 +1,4 @@
+"""This module provides reuseable utilities for many of the other modules in the jacques package."""
 from typing import Callable, Counter, List
 import numpy as np
 
@@ -59,8 +60,8 @@ def list_compare(
     return Counter(list1) == Counter(list2)
 
 
-def key_by_value(dict, value, compare_callback=None):
-    for key, val in dict.items():
+def key_by_value(dictionary, value, compare_callback=None):
+    for key, val in dictionary.items():
         if compare_callback:
             try:
                 if compare_callback(val, value):
@@ -73,12 +74,18 @@ def key_by_value(dict, value, compare_callback=None):
 
 
 def sanitize_whitespace_and_symbols(string: str) -> str:
-    return string.translate({ord(c): "_" for c in " !@#$%^&*()[]{};:,./<>?\\|`~-=_+"})
+    return string.translate(
+        {ord(c): "_" for c in " !@#$%^&*()[]{};:,./<>?\\|`~-=_+"}
+    )
 
 
-def dict_to_string(dict: dict) -> str:
-    return "{ " + ", ".join([f"{key}: {value}" for key, value in dict.items()]) + " }"
+def dict_to_string(dictionary: dict) -> str:
+    return (
+        "{ "
+        + ", ".join([f"{key}: {value}" for key, value in dictionary.items()])
+        + " }"
+    )
 
 
-def indent(string: str, indent: int = 1) -> str:
-    return "\n".join([indent * "\t" + line for line in string.split("\n")])
+def indent(string: str, indentation: int = 1) -> str:
+    return "\n".join([indentation * "\t" + line for line in string.split("\n")])

@@ -2,17 +2,38 @@ import ast
 from ast import NodeTransformer, iter_fields
 from typing import Any, Tuple
 from ..ast.python_ast_utils import unparse_comparator, unparse_operation
-from ..core.arguments import _Argument, Listleton, Operaton, Singleton, IdProvider
+from ..core.arguments import (
+    _Argument,
+    Listleton,
+    Operaton,
+    Singleton,
+    _IdProvider,
+)
+
+# pylint: disable=C0103 # python built-in modules do not conform to pep8, huh
 
 
 class ArgumentReplacer(NodeTransformer):
-    def __init__(self, dsl_arg: _Argument.DSL, id_provider: IdProvider) -> None:
+    """Replaces the argument with a placeholder
+
+    :param dsl_arg: the argument to replace in case of a match
+    :param id_provider: the id provider to use"""
+
+    def __init__(
+        self, dsl_arg: _Argument.DSL, id_provider: _IdProvider
+    ) -> None:
         super().__init__()
         self.dsl_arg = dsl_arg
         self.placeholder = None
         self.id_provider = id_provider
 
-    def replace(self, node: ast.AST) -> Tuple[ast.AST, _Argument.Placeholder | None]:
+    def replace(
+        self, node: ast.AST
+    ) -> Tuple[ast.AST, _Argument.Placeholder | None]:
+        """Replaces the argument with a placeholder
+
+        :param node: Python AST to replace the argument in
+        :return: updated tree and the placeholder reference or None if no match was found"""
         faux_node = ast.Module(body=[node])
         visited = super().visit(faux_node)
         return visited.body[0], self.placeholder
@@ -33,7 +54,9 @@ class ArgumentReplacer(NodeTransformer):
                 )
         return self.placeholder
 
-    def _operaton_placeholder(self, value, placeholding_for) -> Operaton.Placeholder:
+    def _operaton_placeholder(
+        self, value, placeholding_for
+    ) -> Operaton.Placeholder:
         if not self.placeholder:
             self.placeholder = Operaton.Placeholder(
                 self.id_provider, value, placeholding_for
@@ -96,7 +119,7 @@ class ArgumentReplacer(NodeTransformer):
                         value = self.visit(value)
                         if value is None:
                             continue
-                        elif not isinstance(value, ast.AST):
+                        if not isinstance(value, ast.AST):
                             new_values.extend(value)
                             continue
                     new_values.append(value)

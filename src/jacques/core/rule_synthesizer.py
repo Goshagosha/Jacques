@@ -1,15 +1,15 @@
 from __future__ import annotations
+from loguru import logger
 from typing import TYPE_CHECKING
 from .arguments import (
     Choicleton,
-    IdProvider,
+    _IdProvider,
     Listleton,
 )
 from .jacques_member import JacquesMember
 from .rule import Rule
 from ..ast.python_ast_arg_replacer import ArgumentReplacer
 from .example import Example
-from loguru import logger
 
 from ..ast.jacques_ast_utils import CodeExtractor
 
@@ -20,10 +20,16 @@ if TYPE_CHECKING:
 
 
 class RuleSynthesizer(JacquesMember):
+    """Class for generating rules from matches."""
+
     def __init__(self, jacques: Jacques) -> None:
         super().__init__(jacques=jacques)
 
     def from_example(self, example: Example) -> List[Rule]:
+        """Generate rules from an example.
+
+        :param example: Example to generate rules from.
+        :return: List of rules."""
         logger.debug(f"Processing example: {example}")
         rules: List[Rule] = []
         matches = example.matches()
@@ -46,13 +52,13 @@ class RuleSynthesizer(JacquesMember):
         logger.debug(f"Dsl jast: {dsl_jast.command}")
         logger.debug(f"Code jast: {code_jast.source_code}")
         code_ast = CodeExtractor(self.jacques).extract(code_jast, pipe_nodes)
-        id_provider = IdProvider()
+        id_provider = _IdProvider()
         for i, dsl_arg in enumerate(dsl_jast.deconstructed):
             try:
-                code_ast, placeholder = ArgumentReplacer(dsl_arg, id_provider).replace(
-                    code_ast
-                )
-            except Exception:
+                code_ast, placeholder = ArgumentReplacer(
+                    dsl_arg, id_provider
+                ).replace(code_ast)
+            except Exception:  # pylint: disable=broad-except # that's how we SHOULD handle this
                 logger.error(
                     f"Error while parsing AST for\n{code_jast.source_code}\nin a match."
                 )

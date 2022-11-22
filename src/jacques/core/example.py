@@ -1,3 +1,5 @@
+"""This module contains most if not all complex tree matching logic algorithms.
+Lasciate ogni speranza, voi ch'entrate."""
 from __future__ import annotations
 import re
 from typing import TYPE_CHECKING
@@ -9,7 +11,7 @@ from ..ast.jacques_ast_utils import (
     SubtreeBuilder,
     extract_subtree_by_ref_as_ref_list,
 )
-from ..ast.python_ast_heur_comparer import Comparer
+from ..ast.python_ast_cross_comparer import Comparer
 from .jacques_member import JacquesMember
 from .rule import ConditionalRule, Rule
 
@@ -37,8 +39,12 @@ class Example(JacquesMember):
 
     def matrix(self) -> _ExampleMatrix:
         dsl_jast_list = list(self.jacques.dsl_parser.parse(self.dsl_source))
-        code_jast_list = list(self.jacques.python_parser.parse(self.code_source))
-        return _ExampleMatrix(self.jacques, self.id, dsl_jast_list, code_jast_list)
+        code_jast_list = list(
+            self.jacques.python_parser.parse(self.code_source)
+        )
+        return _ExampleMatrix(
+            self.jacques, self.id, dsl_jast_list, code_jast_list
+        )
 
     @property
     def is_exhausted(self) -> bool:
@@ -49,7 +55,7 @@ class Example(JacquesMember):
         return self.matrix().matches()
 
 
-class _ExampleMatrix:
+class _ExampleMatrix:  # pylint: disable=too-many-instance-attributes # science is complex
     def __init__(
         self,
         jacques,
@@ -74,15 +80,16 @@ class _ExampleMatrix:
         logger.debug(f"Example matrix:\n{self}")
         with logger.contextualize(latex=True):
             logger.debug(self.to_latex_table())
-        if self.jacques.heuristic_on:
-            self._heuristics()
-            logger.debug(f"Example matrix after heuristic:\n{self}")
-        pass
+        if self.jacques.cross_compare_on:
+            self._cross_compares()
+            logger.debug(f"Example matrix after cross_compare:\n{self}")
 
-    def _heuristics(self) -> None:
-        heuristic_matrix = np.zeros((self.y, self.x), dtype=int)
+    def _cross_compares(  # pylint: disable=too-many-branches # science is complex
+        self,
+    ) -> None:
+        cross_compare_matrix = np.zeros((self.y, self.x), dtype=int)
         for i in range(self.x):
-            heuristic_column = [0] * self.y
+            cross_compare_column = [0] * self.y
             code_jast = self.code_header[i]
             for j in range(self.y):
                 dsl_jast = self.dsl_header[j]
@@ -90,33 +97,35 @@ class _ExampleMatrix:
                     try:
                         matches = Comparer(arg).compare(code_jast.code_ast)
                     except AttributeError as e:
-                        logger.debug(f"Error in heuristic: {e}")
+                        logger.debug(f"Error in cross_compare: {e}")
                         matches = 0
-                    heuristic_column[j] += matches
-            heuristic_matrix[:, i] = heuristic_column
-        logger.debug(f"Heuristic matrix compared:\n{heuristic_matrix}")
+                    cross_compare_column[j] += matches
+            cross_compare_matrix[:, i] = cross_compare_column
+        logger.debug(f"Crosscompare matrix compared:\n{cross_compare_matrix}")
         for i in range(self.x):
             code_jast = self.code_header[i]
             for child in code_jast.children:
                 k = self.code_header.index(child)
-                heuristic_matrix[:, i] -= heuristic_matrix[:, k]
-        logger.debug(f"Heuristic folded:\n{heuristic_matrix}")
+                cross_compare_matrix[:, i] -= cross_compare_matrix[:, k]
+        logger.debug(f"Crosscompare folded:\n{cross_compare_matrix}")
         for i in range(self.x):
-            if max(heuristic_matrix[:, i]) == 0:
+            if max(cross_compare_matrix[:, i]) == 0:
                 continue
-            heuristic_matrix[:, i] = [
-                1 if heuristic_matrix[j, i] == max(heuristic_matrix[:, i]) else 0
+            cross_compare_matrix[:, i] = [
+                1
+                if cross_compare_matrix[j, i] == max(cross_compare_matrix[:, i])
+                else 0
                 for j in range(self.y)
             ]
-        logger.debug(f"Heuristic regularized:\n{heuristic_matrix}")
+        logger.debug(f"Crosscompare regularized:\n{cross_compare_matrix}")
         for i in range(self.y):
             for j in range(self.x):
                 if self.m[i, j] == 0:
-                    heuristic_matrix[i, j] = 0
+                    cross_compare_matrix[i, j] = 0
         for i in range(self.y):
-            if max(heuristic_matrix[:, i]) == 0:
-                heuristic_matrix[:, i] = self.m[:, i]
-        self.m = heuristic_matrix
+            if max(cross_compare_matrix[:, i]) == 0:
+                cross_compare_matrix[:, i] = self.m[:, i]
+        self.m = cross_compare_matrix
 
     def _write_partition_into_matrix(self, root_partition: List[CodeJAST]):
         def write_children(code_jast: CodeJAST, i: int):
@@ -129,7 +138,9 @@ class _ExampleMatrix:
             self.m[i, self.code_header.index(code_jast)] = 1
             write_children(code_jast, i)
 
-    def _root_partitions(self, code_jast: CodeJAST, dsl_height) -> List[List[CodeJAST]]:
+    def _root_partitions(
+        self, code_jast: CodeJAST, dsl_height
+    ) -> List[List[CodeJAST]]:
         subparts = []
         for child in code_jast.children:
             subparts.extend(self._root_partitions_rec(child, dsl_height - 1))
@@ -145,19 +156,18 @@ class _ExampleMatrix:
             for child in code_jast.children:
                 subparts.extend(self._root_partitions_rec(child, dsl_height))
             return subparts
-        elif dsl_height > code_jast.height:
+        if dsl_height > code_jast.height:
             return []
-        else:
-            subparts = []
-            subparts_skipping = []
-            for child in code_jast.children:
-                subparts.extend(self._root_partitions_rec(child, dsl_height - 1))
-                if code_jast.height > dsl_height:
-                    subparts_skipping.extend(
-                        self._root_partitions_rec(child, dsl_height)
-                    )
-            subparts = [[code_jast] + subpart for subpart in subparts]
-            return subparts + subparts_skipping
+        subparts = []
+        subparts_skipping = []
+        for child in code_jast.children:
+            subparts.extend(self._root_partitions_rec(child, dsl_height - 1))
+            if code_jast.height > dsl_height:
+                subparts_skipping.extend(
+                    self._root_partitions_rec(child, dsl_height)
+                )
+        subparts = [[code_jast] + subpart for subpart in subparts]
+        return subparts + subparts_skipping
 
     def _update_with_rules(self) -> None:
         for rule in self.jacques.ruleset.values():
@@ -170,9 +180,12 @@ class _ExampleMatrix:
                     if re.match(exception_regex, code_jast.source_code):
                         self.m[:, i] = 0
 
-    def _update_with_rule(self, rule: Rule) -> None:
-        for i, dsl_jast in reversed(list(enumerate(self.dsl_header))):
-            # TODO: resolve pipe nodes
+    def _update_with_rule(  # pylint: disable=too-many-branches # science
+        self, rule: Rule
+    ) -> None:
+        for i, dsl_jast in reversed(  # pylint: disable=too-many-nested-blocks
+            list(enumerate(self.dsl_header))
+        ):
             dsl_regex_match = re.match(rule.regex_dsl, dsl_jast.dsl_string)
             if dsl_regex_match:
                 # We exclude nodes that could not match the dsl right away:
@@ -207,7 +220,9 @@ class _ExampleMatrix:
                                 if matched_code_jast_list:
                                     self.m[i, :] = 0
                                     for code_jast in matched_code_jast_list:
-                                        self.m[:, self.code_header.index(code_jast)] = 0
+                                        self.m[
+                                            :, self.code_header.index(code_jast)
+                                        ] = 0
                                     self.pipe_nodes[i - 1].append(
                                         matched_code_jast_list[0]
                                     )
@@ -226,20 +241,27 @@ class _ExampleMatrix:
                                     break
                             if not_matched:
                                 continue
-                            matched_code_jast_list = extract_subtree_by_ref_as_ref_list(
-                                code_jast, rule.code_jast
+                            matched_code_jast_list = (
+                                extract_subtree_by_ref_as_ref_list(
+                                    code_jast, rule.code_jast
+                                )
                             )
                             if matched_code_jast_list:
                                 self.m[i, :] = 0
                                 for code_jast in matched_code_jast_list:
-                                    self.m[:, self.code_header.index(code_jast)] = 0
-                                self.pipe_nodes[i - 1].append(matched_code_jast_list[0])
+                                    self.m[
+                                        :, self.code_header.index(code_jast)
+                                    ] = 0
+                                self.pipe_nodes[i - 1].append(
+                                    matched_code_jast_list[0]
+                                )
 
     @property
     def exhausted(self):
         return self.m.sum() == 0
 
     def to_latex_table(self):
+        # pylint: disable=anomalous-backslash-in-string # latex things
         result = "\\begin{blockarray}{" + "c" * (self.x + 1) + "}\n"
         for x in range(self.x):
             result += "& \\text{\pw{" + self.code_header[x].command + "}}"
@@ -282,19 +304,24 @@ class _ExampleMatrix:
             if solved:
                 matches[i] = list(np.where(self.m[i] == 1)[0])
                 if i > 0:
-                    self.pipe_nodes[i - 1].append(self.code_header[matches[i][0]])
+                    self.pipe_nodes[i - 1].append(
+                        self.code_header[matches[i][0]]
+                    )
         return matches
 
     def matches(self) -> List[Tuple[DslJAST, CodeJAST, List[CodeJAST]]]:
         matches = self._compute_matches()
         result = []
-        for i, js in reversed(matches.items()):
+        for i, js in reversed(matches.items()):  # pylint: disable=invalid-name
             dsl_jast = self.dsl_header[i]
             code_jasts = [self.code_header[j] for j in js]
             codejast_complete_subtree = SubtreeBuilder().build(code_jasts)
             if not self.pipe_nodes[i] and i < self.y - 1:
                 self.pipe_nodes[i] = [
-                    self.code_header[k] for k in list(np.where(self.m[i + 1] == 1)[0])
+                    self.code_header[k]
+                    for k in list(np.where(self.m[i + 1] == 1)[0])
                 ]
-            result.append((dsl_jast, codejast_complete_subtree, self.pipe_nodes[i]))
+            result.append(
+                (dsl_jast, codejast_complete_subtree, self.pipe_nodes[i])
+            )
         return result
